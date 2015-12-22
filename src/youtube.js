@@ -10,26 +10,33 @@ Replayer = {
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
+	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,/* add \\ before \ because of string */
 	player:null,
 	toggleAutoPlay:false,
-	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,/* add \\ before \ because of string */
+	timer:{
+		timeout:null
+	},
+	duration:{
+		start:null,
+		end:null
+	},
 	setTimeoutTimer:function(){
 		this.rmTimer();
-		this.setRange();
-		this.showRepeatRange();
-		if(Replayer.player.getPlayerState()===1&&this.duration.end>Replayer.player.getCurrentTime()*1000&&Replayer.player.getCurrentTime()*1000>=this.duration.start){
-			Replayer.timer.timeout=setTimeout(function(){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)},1000);
-		}else{
-			this.setIntervalTimer();
+		if(!(this.player.getPlayerState()===1&&this.duration.end>this.player.getCurrentTime()*1000&&this.player.getCurrentTime()*1000>=this.duration.start)){
+			if(this.player.getPlayerState()===2){
+				this.player.playVideo();
+			}
+			this.player.seekTo(Replayer.duration.start/1000,true);
 		}
+		this.timer.timeout=setTimeout(function(){Replayer.setTimeoutTimer()},this.duration.end-this.player.getCurrentTime()*1000);
 	},
 	setRange:function(){/* Return change of time range */
 		var start,end;
 		start=this.getSecond(document.getElementById('replayerTimerFrom'));
 		end=this.getSecond(document.getElementById('replayerTimerTo'));
 		
-		if(end<=0||end>(Replayer.player.getDuration()+1)*1000){
-			end=Math.floor(Replayer.player.getDuration()*1000);
+		if(end<=0||end>(this.player.getDuration()+1)*1000){
+			end=Math.floor(this.player.getDuration()*1000);
 		}
 		if(start<0)	start=0;
 		if(end<start){
@@ -56,36 +63,31 @@ Replayer = {
 		document.getElementById('replayerTimerFrom').value=this.msToStr(this.duration.start);
 		document.getElementById('replayerTimerTo').value=this.msToStr(this.duration.end);
 	},
-	setIntervalTimer:function(){
-		this.rmTimer();
-		this.player.seekTo(Replayer.duration.start/1000,true);
-		if(this.player.getPlayerState()===2){
-			this.player.playVideo();
-		}
-		this.timer.timeout=setTimeout(function(){if(Replayer.player.getPlayerState()===1){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)}else{Replayer.setIntervalTimer()}},1000);
-	},
 	rmTimer:function(){
 		clearTimeout(this.timer.timeout);
 		this.timer.timeout=null;
 	},
-	toggle:function(isSetLoop){
-		
-		if(!this.player){
+	toggle:function(isForceLoop){
+		if(!this.player || Object.keys(this.init.resetState).length!=0){
+			setTimeout((function (a){return function (){Replayer.toggle(a)};})(isForceLoop),100);
 		}else if(this.player.getAdState()>0){
 			this.player.querySelector('video').addEventListener('durationchange', (
 				function (a){
 					return function (){
-						if(!isNaN(Replayer.player.querySelector('video').duration)){
-							Replayer.player.querySelector('video').removeEventListener('durationchange',arguments.callee);
+						var e=Replayer.player.querySelector('video');
+						if(!isNaN(e.duration)){
+							e.removeEventListener('durationchange',arguments.callee);
 							Replayer.toggle(a);
 						}
 					}
-				})(isSetLoop)
+				})(isForceLoop)
 			);
-			setTimeout((function (a){return function (){Replayer.toggle(a)}})(isSetLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
+			setTimeout((function (a){return function (){Replayer.toggle(a)}})(isForceLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
 			var e=document.getElementById('replayToggle');
-			if(e.textContent==this.text.Loop||!!isSetLoop){
+			if(e.textContent==this.text.Loop||!!isForceLoop){
+				this.setRange();
+				this.showRepeatRange();
 				this.setTimeoutTimer();
 				this.setAutoReplay(0);
 				e.innerHTML=this.text.Stop;
@@ -93,7 +95,7 @@ Replayer = {
 			}else{
 				this.rmTimer();
 				this.setAutoReplay(1);
-				e.innerHTML='Loop';
+				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
 			}
 			this.recordSaver();
@@ -132,13 +134,6 @@ Replayer = {
 					+(str[1]>9?(str[1]+'.'):str[1]>0?('0'+str[1]+'.'):'00.')
 					+(str[0]>99?str[0]:str[0]>9?'0'+str[0]:'00'+str[0]);
 	},
-	timer:{
-		timeout:null
-	},
-	duration:{
-		start:null,
-		end:null
-	},
 	recordSaver:function(){
 		this.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:this.duration.start,end:this.duration.end,autoPlay:document.getElementById('replayToggle').textContent==this.text.Stop},null);
 	},
@@ -152,17 +147,14 @@ Replayer = {
 			if(!!window.indexedDB&&!this.isOpen&&!this.isReqOpen){
 				this.dbreq=window.indexedDB.open('YouTubeReplayer',1);
 				this.dbreq.onsuccess=function(e){
-					console.log('Indexed.open Success: ',e);
 					Replayer.IndexedDB.db=e.target.result;
 					Replayer.IndexedDB.isOpen=true;
 					Replayer.IndexedDB.runWaitingFunction();
 				};
 				this.dbreq.onerror=function(e){
-					console.log('IndexedDB.open Error: ',e);
 				};
 				this.dbreq.onupgradeneeded=function(evt){
 					var db=evt.target.result;
-					console.log('IndexedDB.onupgradeneeded: ',evt);
 					if(!db.objectStoreNames.contains('replayRange')){
 						db.createObjectStore('replayRange',{keyPath:'videoID'});
 					}
@@ -173,7 +165,6 @@ Replayer = {
 			this.isReqOpen=true;
 		},
 		runWaitingFunction:function(){
-			console.log('Running Waiting Function...');
 			for(var i=0;i<Replayer.IndexedDB.waitingFunctionList.length;i++){
 				!!Replayer.IndexedDB.waitingFunctionList[i]&&Replayer.IndexedDB.waitingFunctionList[i].constructor==Function&&Replayer.IndexedDB.waitingFunctionList[i]();
 			}
@@ -184,7 +175,6 @@ Replayer = {
 				function(vid,cb){
 					return function(){
 						Replayer.IndexedDB.db.transaction(['replayRange']).objectStore('replayRange').get(vid).onsuccess=function(evt){
-							console.log('Read',evt);
 							!!cb&&cb.constructor==Function&&cb(evt.target.result);
 						};
 					};
@@ -198,7 +188,6 @@ Replayer = {
 					return function(){
 						data.videoID=videoID;
 						Replayer.IndexedDB.db.transaction(['replayRange'],'readwrite').objectStore('replayRange').put(data).onsuccess=function(evt){
-							console.log('Write',data,evt.target.result);
 							!!cb&&cb.constructor==Function&&cb(evt.target.result);
 						};
 					};
