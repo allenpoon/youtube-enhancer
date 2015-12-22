@@ -126,7 +126,7 @@ Replayer = {
 		db:null,
 		waitingFunctionList:[],
 		openDB:function(){
-			if(!this.isOpen&&!this.dbreq){
+			if(!!window.indexedDB&&!this.isOpen&&!this.isReqOpen){
 				this.dbreq=window.indexedDB.open('YouTubeReplayer',1);
 				this.dbreq.onsuccess=function(e){
 					console.log('Indexed.open Success: ',e);
