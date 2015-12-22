@@ -203,7 +203,7 @@ Replayer = {
 	unload:{
 		ResetReplayerTimer:function(){Replayer.rmTimer()},
 		SaveAutoPlay:function(){window.localStorage['Replayer-isAutoPlay']=Replayer.toggleAutoPlay},
-		SaveRecord:function(){if(!!Replayer.duration.start)Replayer.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:Replayer.duration.start,end:Replayer.duration.end,autoPlay:document.getElementById('replayToggle').textContent==Replayer.text.Stop},null)},
+		SaveRecord:function(){if(Replayer.duration.start!=null)Replayer.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:Replayer.duration.start,end:Replayer.duration.end,autoPlay:document.getElementById('replayToggle').textContent==Replayer.text.Stop},null)},
 		state:false,
 		main:function(){
 			if(!Replayer.unload.state){
