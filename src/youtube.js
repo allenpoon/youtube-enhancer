@@ -1,10 +1,21 @@
 Replayer = {
+	text:{
+		Loop:'Loop',
+		Stop:'Stop',
+		PlaceHolderFrom:'From',
+		PlaceHolderTo:'From',
+		TooltipStartLoop:'Start Repeat',
+		TooltipEndLoop:'End Repeat',
+		TooltipFormat:'(H)(M)(S)(ms)',
+		TooltipFrom:'Start',
+		TooltipTo:'End'
+	},
 	player:null,
 	toggleAutoPlay:false,
 	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,/* add \\ before \ because of string */
 	setTimeoutTimer:function(){
 		this.rmTimer();
-		this.setRange()&&this.recordSaver();
+		this.setRange();
 		this.showRepeatRange();
 		if(Replayer.player.getPlayerState()===1&&this.duration.end-Replayer.player.getCurrentTime()*1000>0&&Replayer.player.getCurrentTime()*1000-this.duration.start>=0){
 			Replayer.timer.timeout=setTimeout(function(){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)},1000);
@@ -12,7 +23,7 @@ Replayer = {
 			this.setIntervalTimer();
 		}
 	},
-	setRange:function(){/* return whether need to save record (save IO)*/
+	setRange:function(){/* Return change of time range */
 		var start,end;
 		start=this.getSecond(document.getElementById('replayerTimerFrom'));
 		end=this.getSecond(document.getElementById('replayerTimerTo'));
@@ -64,17 +75,18 @@ Replayer = {
 	},
 	toggle:function(isSetLoop){
 		var e=document.getElementById('replayToggle');
-		if(e.textContent=='Loop'||!!isSetLoop){
+		if(e.textContent==this.text.Loop||!!isSetLoop){
 			this.setTimeoutTimer();
 			this.setAutoReplay(0);
-			e.innerHTML='Stop';
-			e.title=e.dataset.tooltipText='End Repeat';
+			e.innerHTML=this.text.Stop;
+			e.title=e.dataset.tooltipText=this.text.TooltipEndLoop;
 		}else{
 			this.rmTimer();
 			this.setAutoReplay(1);
 			e.innerHTML='Loop';
-			e.title=e.dataset.tooltipText='Start Repeat';
+			e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
 		}
+		this.recordSaver();
 	},
 	setAutoReplay:function(toggle){
 		if(toggle&&Replayer.toggleAutoPlay){
@@ -117,7 +129,7 @@ Replayer = {
 		end:null
 	},
 	recordSaver:function(){
-		this.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:this.duration.start,end:this.duration.end},null);
+		this.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:this.duration.start,end:this.duration.end,autoPlay:document.getElementById('replayToggle').textContent==this.text.Stop},null);
 	},
 	IndexedDB:{
 		isOpen:false,
@@ -191,13 +203,13 @@ Replayer = {
 		ReplayerLayout:function(){
 			var e=document.getElementById('watch-like-dislike-buttons');
 			if(!Replayer.init.resetState.replayer&&!!e){
-				var span,input,format='<br>(H)(M)(S)(ms)<br>'+Replayer.format;/* add \\ before \ because of string */
+				var span,input,format='<br>'+Replayer.text.TooltipFormat+'<br>'+Replayer.format;
 				
 				span=document.createElement('span');
 				input=document.createElement('input');
-				input.placeholder='From';
+				input.placeholder=Replayer.text.PlaceHolderFrom;
 				input.size=8;
-				input.title='Start'+format;
+				input.title=Replayer.text.TooltipFrom+format;
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
 				input.style.textAlign='center';
 				input.id='replayerTimerFrom';
@@ -207,8 +219,8 @@ Replayer = {
 				
 				span=span.cloneNode();
 				input=input.cloneNode(true);
-				input.placeholder='To';
-				input.title='End'+format;
+				input.placeholder=Replayer.text.PlaceHolderTo;
+				input.title=Replayer.text.TooltipTo+format;
 				input.id='replayerTimerTo';
 				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
@@ -217,10 +229,10 @@ Replayer = {
 				span=document.createElement('span');
 				input=document.createElement('button');
 				input.id='replayToggle';
-				input.title='Start Repeat';
+				input.title=Replayer.text.TooltipStartLoop;
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
 				input.addEventListener('click',function(){Replayer.toggle();},false);
-				input.textContent='Loop';
+				input.textContent=Replayer.text.Loop;
 				span.appendChild(input);
 				e.appendChild(span);
 				
@@ -268,6 +280,9 @@ Replayer = {
 						Replayer.duration.start=info.start;
 						Replayer.duration.end=info.end;
 						Replayer.showRepeatRange();
+						if(!!info.autoPlay){
+							Replayer.toggle(true);
+						}
 					}
 				});
 			}
