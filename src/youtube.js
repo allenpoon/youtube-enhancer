@@ -17,7 +17,7 @@ Replayer = {
 		this.rmTimer();
 		this.setRange();
 		this.showRepeatRange();
-		if(Replayer.player.getPlayerState()===1&&this.duration.end-Replayer.player.getCurrentTime()*1000>0&&Replayer.player.getCurrentTime()*1000-this.duration.start>=0){
+		if(Replayer.player.getPlayerState()===1&&this.duration.end>Replayer.player.getCurrentTime()*1000&&Replayer.player.getCurrentTime()*1000>=this.duration.start){
 			Replayer.timer.timeout=setTimeout(function(){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)},1000);
 		}else{
 			this.setIntervalTimer();
@@ -74,19 +74,35 @@ Replayer = {
 		this.timer.timeout=null;
 	},
 	toggle:function(isSetLoop){
-		var e=document.getElementById('replayToggle');
-		if(e.textContent==this.text.Loop||!!isSetLoop){
-			this.setTimeoutTimer();
-			this.setAutoReplay(0);
-			e.innerHTML=this.text.Stop;
-			e.title=e.dataset.tooltipText=this.text.TooltipEndLoop;
+		
+		if(!this.player){
+		}else if(this.player.getAdState()>0){
+			this.player.querySelector('video').addEventListener('durationchange', (
+				function (a){
+					return function (){
+						if(!isNaN(Replayer.player.querySelector('video').duration)){
+							Replayer.player.querySelector('video').removeEventListener('durationchange',arguments.callee);
+							Replayer.toggle(a);
+						}
+					}
+				})(isSetLoop)
+			);
+			setTimeout((function (a){return function (){Replayer.toggle(a)}})(isSetLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
-			this.rmTimer();
-			this.setAutoReplay(1);
-			e.innerHTML='Loop';
-			e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
+			var e=document.getElementById('replayToggle');
+			if(e.textContent==this.text.Loop||!!isSetLoop){
+				this.setTimeoutTimer();
+				this.setAutoReplay(0);
+				e.innerHTML=this.text.Stop;
+				e.title=e.dataset.tooltipText=this.text.TooltipEndLoop;
+			}else{
+				this.rmTimer();
+				this.setAutoReplay(1);
+				e.innerHTML='Loop';
+				e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
+			}
+			this.recordSaver();
 		}
-		this.recordSaver();
 	},
 	setAutoReplay:function(toggle){
 		if(toggle&&Replayer.toggleAutoPlay){
