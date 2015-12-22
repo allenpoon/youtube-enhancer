@@ -1,6 +1,6 @@
 {
 	"name":"YT Replayer & HDer",
-	"version":"4.0",
+	"version":"5.0",
 	"manifest_version":2,
 	"description":"Replay The Video and Auto HD",
 	"content_scripts":[

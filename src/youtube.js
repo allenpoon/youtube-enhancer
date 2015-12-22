@@ -1,14 +1,10 @@
 Replayer = {
 	player:null,
+	toggleAutoPlay:false,
+	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,/* add \\ before \ because of string */
 	setTimeoutTimer:function(){
 		this.rmTimer();
-		var e=document.getElementById('replayToggle');
-		e.innerHTML='Stop';
-		e.title='End Repeat';
-		e.dataset.tooltipText='End Repeat';
-
-		this.setRange();
-		this.recordSaver();
+		this.setRange()&&this.recordSaver();
 		this.showRepeatRange();
 		if(Replayer.player.getPlayerState()===1&&this.duration.end-Replayer.player.getCurrentTime()*1000>0&&Replayer.player.getCurrentTime()*1000-this.duration.start>=0){
 			Replayer.timer.timeout=setTimeout(function(){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)},1000);
@@ -16,31 +12,39 @@ Replayer = {
 			this.setIntervalTimer();
 		}
 	},
-	setRange:function(){
-		this.duration.start=this.getSecond(document.getElementById('replayerTimerFrom'));
-		this.duration.end=this.getSecond(document.getElementById('replayerTimerTo'));
+	setRange:function(){/* return whether need to save record (save IO)*/
+		var start,end;
+		start=this.getSecond(document.getElementById('replayerTimerFrom'));
+		end=this.getSecond(document.getElementById('replayerTimerTo'));
 		
-		if(this.duration.end==0){
-			this.duration.end=Math.floor(Replayer.player.getDuration()*1000);
+		if(end==0){
+			end=Math.floor(Replayer.player.getDuration()*1000);
 		}
-		if(this.duration.end<this.duration.start){
-			var tmp=this.duration.start;
-			this.duration.start=this.duration.end;
-			this.duration.end=tmp;
+		if(end<start){
+			var tmp=start;
+			start=end;
+			end=tmp;
 		}
-		if(this.duration.end<=0||this.duration.end>Replayer.player.getDuration()*1000){
-			this.duration.end=Math.floor(Replayer.player.getDuration()*1000);
+		if(end<=0||end>Replayer.player.getDuration()*1000){
+			end=Math.floor(Replayer.player.getDuration()*1000);
 		}
-		if(this.duration.end-this.duration.start<1){
-			if(Replayer.player.getDuration()*1000<this.duration.start+1000){
-				this.duration.end=this.duration.start+1000;
+		if(end-start<1){
+			if(Replayer.player.getDuration()*1000<start+1000){
+				end=start+1000;
 			}else{
-				this.duration.start=this.duration.end-1000;
+				start=end-1000;
 			}
 		}
-		if(this.duration.start<0){
-			this.duration.start=0;
+		if(start<0){
+			start=0;
 		}
+		
+		if(start==this.duration.start&&end==this.duration.end)return false;
+		
+		this.duration.start=start;
+		this.duration.end=end;
+		
+		return true;
 	},
 	showRepeatRange:function(){
 		document.getElementById('replayerTimerFrom').value=this.msToStr(this.duration.start);
@@ -48,25 +52,37 @@ Replayer = {
 	},
 	setIntervalTimer:function(){
 		this.rmTimer();
-		Replayer.player.seekTo(Replayer.duration.start/1000,true);
-		if(Replayer.player.getPlayerState()===2){
-			Replayer.player.playVideo();
+		this.player.seekTo(Replayer.duration.start/1000,true);
+		if(this.player.getPlayerState()===2){
+			this.player.playVideo();
 		}
-		Replayer.timer.timeout=setTimeout(function(){if(Replayer.player.getPlayerState()===1){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)}else{Replayer.setIntervalTimer()}},1000);
+		this.timer.timeout=setTimeout(function(){if(Replayer.player.getPlayerState()===1){Replayer.timer.timeout=setTimeout(function(){Replayer.setIntervalTimer()},Replayer.duration.end-Replayer.player.getCurrentTime()*1000)}else{Replayer.setIntervalTimer()}},1000);
 	},
 	rmTimer:function(){
-		clearTimeout(Replayer.timer.timeout);
-		Replayer.timer.timeout=null;
+		clearTimeout(this.timer.timeout);
+		this.timer.timeout=null;
 	},
-	toggle:function(){
+	toggle:function(isSetLoop){
 		var e=document.getElementById('replayToggle');
-		if(e.innerHTML=='Loop'){
+		if(e.textContent=='Loop'||!!isSetLoop){
 			this.setTimeoutTimer();
+			this.setAutoReplay(0);
+			e.innerHTML='Stop';
+			e.title=e.dataset.tooltipText='End Repeat';
 		}else{
 			this.rmTimer();
+			this.setAutoReplay(1);
 			e.innerHTML='Loop';
-			e.title='Start Repeat';
-			e.dataset.tooltipText='Start Repeat';
+			e.title=e.dataset.tooltipText='Start Repeat';
+		}
+	},
+	setAutoReplay:function(toggle){
+		if(toggle&&Replayer.toggleAutoPlay){
+			document.querySelector('.toggle-autoplay').click();
+			this.toggleAutoPlay=false;
+		}else if(!toggle&&!!document.querySelector('.toggle-autoplay.yt-uix-button-toggled')){
+			document.querySelector('.toggle-autoplay').click();
+			this.toggleAutoPlay=true;
 		}
 	},
 	toSecond:function(value,level){
@@ -76,18 +92,18 @@ Replayer = {
 		return Number(value);
 	},
 	getSecond:function(e){
-		var time=e.value.match(/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/); /* add \\ before \ because of string */
+		var t=e.value.match(this.format);
 		var count=4;
 		switch(''){
-			case time[1]:count--;
-			case time[2]:count--;
-			case time[3]:count--;
-			case time[4]:count--;
+			case t[1]:count--;
+			case t[2]:count--;
+			case t[3]:count--;
+			case t[4]:count--;
 		}
-		return !!count?(this.toSecond(time[1],count)+this.toSecond(time[2],count-1)+this.toSecond(time[3],count-2)+this.toSecond(time[4],count-3)):0;
+		return !!count?(this.toSecond(t[1],count)+this.toSecond(t[2],count-1)+this.toSecond(t[3],count-2)+this.toSecond(t[4],count-3)):0;
 	},
-	msToStr:function(time){
-		var str=[time%1000,(Math.floor(time/1000))%60,(Math.floor(time/(60*1000)))%60,(Math.floor(time/(60*60*1000)))];
+	msToStr:function(t){
+		var str=[t%1000,(Math.floor(t/1000))%60,(Math.floor(t/(60*1000)))%60,(Math.floor(t/(60*60*1000)))];
 		return(str[3]>9?(str[3]+':'):str[3]>0?('0'+str[3]+':'):'')
 					+(str[2]>9?(str[2]+':'):str[2]>0?('0'+str[2]+':'):str[3]>0?'00:':'')
 					+(str[1]>9?(str[1]+'.'):str[1]>0?('0'+str[1]+'.'):'00.')
@@ -101,59 +117,71 @@ Replayer = {
 		end:null
 	},
 	recordSaver:function(){
-		this.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:this.duration.start,end:this.duration.end}, null);
+		this.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:this.duration.start,end:this.duration.end},null);
 	},
 	IndexedDB:{
 		isOpen:false,
 		isReqOpen:false,
+		dbreq:null,
 		db:null,
+		waitingFunctionList:[],
 		openDB:function(){
-			if(!this.isOpen){
-				var dbreq=window.indexedDB.open('YouTubeReplayer',1);
-				dbreq.onsuccess=function(e){
-					console.log('indexed.open Success: ',e);
+			if(!this.isOpen&&!this.dbreq){
+				this.dbreq=window.indexedDB.open('YouTubeReplayer',1);
+				this.dbreq.onsuccess=function(e){
+					console.log('Indexed.open Success: ',e);
 					Replayer.IndexedDB.db=e.target.result;
 					Replayer.IndexedDB.isOpen=true;
+					Replayer.IndexedDB.runWaitingFunction();
 				};
-				dbreq.onerror=function(e){
-					console.log('indexedDB.open Error: ',e);
+				this.dbreq.onerror=function(e){
+					console.log('IndexedDB.open Error: ',e);
 				};
-				dbreq.onupgradeneeded=function(evt){
-					var db = evt.target.result;
-					console.log('indexedDB.onupgradeneeded: ',evt);
+				this.dbreq.onupgradeneeded=function(evt){
+					var db=evt.target.result;
+					console.log('IndexedDB.onupgradeneeded: ',evt);
 					if(!db.objectStoreNames.contains('replayRange')){
-						db.createObjectStore('replayRange',{keyPath: 'videoID'});
+						db.createObjectStore('replayRange',{keyPath:'videoID'});
 					}
 				};
-			}else{
-				console.log('IDB is already started.');
+			}else if(this.isOpen){
+				this.runWaitingFunction();
 			}
 			this.isReqOpen=true;
 		},
-		getInfoByVideoID:function(videoID,callback){
-			if(this.isOpen){
-				var callBackTmp=callback;
-				this.db.transaction(['replayRange']).objectStore('replayRange').get(videoID).onsuccess=function(evt){
-					console.log('Read',evt);
-					!!callBackTmp&&callBackTmp.constructor==Function&&callBackTmp(evt.target.result);
-				};
-			}else{
-				console.log('IDB is not yet start.');
+		runWaitingFunction:function(){
+			console.log('Running Waiting Function...');
+			for(var i=0;i<Replayer.IndexedDB.waitingFunctionList.length;i++){
+				!!Replayer.IndexedDB.waitingFunctionList[i]&&Replayer.IndexedDB.waitingFunctionList[i].constructor==Function&&Replayer.IndexedDB.waitingFunctionList[i]();
 			}
+			Replayer.IndexedDB.waitingFunctionList=[];
 		},
-		setInfo:function(videoID,Info,callback){
-			if(this.isOpen){
-				var callBackTmp=callback;
-				if(Info.constructor==Object){
-					Info.videoID=videoID;
-					this.db.transaction(['replayRange'], 'readwrite').objectStore('replayRange').put(Info).onsuccess=function(evt){
-						console.log('Write',Info,evt.target.result);
-						!!callBackTmp&&callBackTmp.constructor==Function&&callBackTmp(evt.target.result);
+		getInfoByVideoID:function(videoID,callback){
+			this.waitingFunctionList[this.waitingFunctionList.length]=(
+				function(vid,cb){
+					return function(){
+						Replayer.IndexedDB.db.transaction(['replayRange']).objectStore('replayRange').get(vid).onsuccess=function(evt){
+							console.log('Read',evt);
+							!!cb&&cb.constructor==Function&&cb(evt.target.result);
+						};
 					};
 				}
-			}else{
-				console.log('IDB is not yet start.');
-			}
+			)(videoID,callback);
+			this.openDB();
+		},
+		setInfo:function(videoID,Info,callback){
+			this.waitingFunctionList[this.waitingFunctionList.length]=(
+				function(vid,data,cb){
+					return function(){
+						data.videoID=videoID;
+						Replayer.IndexedDB.db.transaction(['replayRange'],'readwrite').objectStore('replayRange').put(data).onsuccess=function(evt){
+							console.log('Write',data,evt.target.result);
+							!!cb&&cb.constructor==Function&&cb(evt.target.result);
+						};
+					};
+				}
+			)(videoID,Info,callback);
+			this.openDB();
 		},
 		init:function(){
 			!Replayer.IndexedDB.isReqOpen&&Replayer.IndexedDB.openDB();
@@ -163,29 +191,26 @@ Replayer = {
 		ReplayerLayout:function(){
 			var e=document.getElementById('watch-like-dislike-buttons');
 			if(!Replayer.init.resetState.replayer&&!!e){
-				var span,input;
+				var span,input,format='<br>(H)(M)(S)(ms)<br>'+Replayer.format;/* add \\ before \ because of string */
 				
 				span=document.createElement('span');
 				input=document.createElement('input');
 				input.placeholder='From';
 				input.size=8;
-				input.title='Start<br>(H)(M)(S)(ms)<br>/^\\\\D*(\\\\d*)\\\\D*(\\\\d*)\\\\D*(\\\\d*)\\\\D*(\\\\d*)\\\\D*$/'; /* add \\ before \ because of string */
+				input.title='Start'+format;
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
 				input.style.textAlign='center';
 				input.id='replayerTimerFrom';
-				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.setTimeoutTimer();};},false);
+				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
 				e.appendChild(span);
 				
-				span=document.createElement('span');
-				input=document.createElement('input');
+				span=span.cloneNode();
+				input=input.cloneNode(true);
 				input.placeholder='To';
-				input.size=8;
-				input.title='End<br>(H)(M)(S)(ms)<br>/^\\\\D*(\\\\d*)\\\\D*(\\\\d*)\\\\D*(\\\\d*)\\\\D*(\\\\d*)\\\\D*$/'; /* add \\ before \ because of string */
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
-				input.style.textAlign='center';
+				input.title='End'+format;
 				input.id='replayerTimerTo';
-				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.setTimeoutTimer();};},false);
+				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
 				e.appendChild(span);
 				
@@ -238,9 +263,6 @@ Replayer = {
 			if(!Replayer.init.resetState.IDBOpenReq){
 				Replayer.IndexedDB.init();
 				Replayer.init.resetState.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
-			}
-			Replayer.init.resetState.showRecord=!!Replayer.init.resetState.showRecord;
-			if(Replayer.init.resetState.IDBOpenReq&&Replayer.IndexedDB.isOpen&&!Replayer.init.resetState.showRecord){
 				Replayer.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,function(info){
 					if(!!info){
 						Replayer.duration.start=info.start;
@@ -248,7 +270,6 @@ Replayer = {
 						Replayer.showRepeatRange();
 					}
 				});
-				Replayer.init.resetState.showRecord=true;
 			}
 		},
 		curVideoID:'',
