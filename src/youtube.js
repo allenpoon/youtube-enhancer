@@ -217,12 +217,14 @@ Replayer = {
 	},
 	init:{
 		SetUnloadHandler:function(){
+			Replayer.init.resetState.unloadHandler=!!Replayer.init.resetState.unloadHandler;
 			if(!Replayer.init.resetState.unloadHandler){
 				window.onbeforeunload=function(){Replayer.unload.main();};
 				Replayer.init.resetState.unloadHandler=true;
 			}
 		},
 		SetAutoPlay:function(){
+			Replayer.init.resetState.setAutoPlay=!!Replayer.init.resetState.setAutoPlay;
 			if(!Replayer.init.resetState.setAutoPlay){
 				Replayer.toggleAutoPlay=(window.localStorage['Replayer-isAutoPlay']=='true');
 				Replayer.setAutoReplay(1);
@@ -231,6 +233,7 @@ Replayer = {
 		},
 		ReplayerLayout:function(){
 			var e=document.getElementById('watch8-secondary-actions');
+			Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer;
 			if(Replayer.init.resetState.removeButton&&!Replayer.init.resetState.replayer&&!!e){
 				var span,input,format='<br>'+Replayer.text.TooltipFormat+'<br>'+Replayer.format;
 				
@@ -270,6 +273,8 @@ Replayer = {
 		},
 		ChangeYouTubeLayout:function(){
 			var e,eL;
+			Replayer.init.resetState.likeDislike=!!Replayer.init.resetState.likeDislike;
+			Replayer.init.resetState.removeButton=!!Replayer.init.resetState.removeButton;
 			if(!Replayer.init.resetState.likeDislike){
 				e=document.getElementById('watch-like-dislike-buttons');
 				!!e&&(eL=e.querySelectorAll('.yt-uix-button-content'))||(eL=[]);
@@ -278,21 +283,28 @@ Replayer = {
 				}
 				!!e&&(eL=e.querySelectorAll('button'))||(eL=[]);
 				for(var i=0;i<eL.length;i++){
-					Replayer.init.resetState.likeDislike=!!eL[i]&&!!(eL[i].style.padding='0 5px')&&!!(eL[i].querySelector('span').style.margin='0')&&!!(eL[i].querySelector('.yt-uix-button-icon').style.margin='0');
+					if(!!eL[i]){
+						eL[i].style.padding='0 5px';
+						eL[i].querySelector('span').style.margin='0';
+						eL[i].querySelector('.yt-uix-button-icon').style.margin='0';
+					}
 				}
+				Replayer.init.resetState.likeDislike=true;
 			}
 			if(!Replayer.init.resetState.removeButton){
 				e=document.getElementById('watch8-secondary-actions');
-				Replayer.init.resetState.removeButton=!!e&&!!(e.removeChild(e.lastChild));
+				!!e&&!!(e.removeChild(e.lastChild));
+				Replayer.init.resetState.removeButton=true;
 			}
 		},
 		ChangeQuanlity:function(){
 			if(!Replayer.init.resetState.playerQuality){
 				Replayer.player.setPlaybackQuality(Replayer.player.getAvailableQualityLevels()[0]);
-				Replayer.init.resetState.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
 			}
+			Replayer.init.resetState.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
 		},
 		ShowRecordedRange:function(){
+			Replayer.init.resetState.IDBOpenReq=!!Replayer.init.resetState.IDBOpenReq;
 			if(Replayer.init.resetState.setAutoPlay&&!Replayer.init.resetState.IDBOpenReq){
 				Replayer.IndexedDB.init();
 				Replayer.init.resetState.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
