@@ -4,7 +4,7 @@
 
 ## Feature
 1. Auto HD: switch to Highest resolution automatically
-2. Custom range loop: detail see [Input format](#Input-format)
+2. Custom range loop: detail see [Input format](#input-format)
 3. Auto save range
 4. Auto loop if it set to loop in that video last time
 
