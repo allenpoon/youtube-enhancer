@@ -53,7 +53,7 @@ Replayer = {
 		}
 		
 		if(start==this.duration.start&&end==this.duration.end)return false;
-		
+
 		this.duration.start=start;
 		this.duration.end=end;
 		
@@ -69,11 +69,11 @@ Replayer = {
 	},
 	toggle:function(isForceLoop){
 		if(!this.player || Object.keys(this.init.resetState).length!=0){
-			setTimeout((function (a){return function (){Replayer.toggle(a)};})(isForceLoop),100);
+			setTimeout((function(a){return function(){Replayer.toggle(a)};})(isForceLoop),100);
 		}else if(this.player.getAdState()>0){
 			this.player.querySelector('video').addEventListener('durationchange', (
-				function (a){
-					return function (){
+				function(a){
+					return function(){
 						var e=Replayer.player.querySelector('video');
 						if(!isNaN(e.duration)){
 							e.removeEventListener('durationchange',arguments.callee);
@@ -82,12 +82,11 @@ Replayer = {
 					}
 				})(isForceLoop)
 			);
-			setTimeout((function (a){return function (){Replayer.toggle(a)}})(isForceLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
+			setTimeout((function(a){return function(){Replayer.toggle(a)}})(isForceLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
 			var e=document.getElementById('replayToggle');
 			if(e.textContent==this.text.Loop||!!isForceLoop){
-				this.setRange();
-				this.showRepeatRange();
+				this.setRange()&&this.showRepeatRange();
 				this.setTimeoutTimer();
 				this.setAutoReplay(0);
 				e.innerHTML=this.text.Stop;
@@ -98,23 +97,28 @@ Replayer = {
 				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
 			}
-			this.recordSaver();
 		}
 	},
 	setAutoReplay:function(toggle){
-		if(toggle&&Replayer.toggleAutoPlay){
-			document.querySelector('.toggle-autoplay').click();
-			this.toggleAutoPlay=false;
-		}else if(!toggle&&!!document.querySelector('.toggle-autoplay.yt-uix-button-toggled')){
-			document.querySelector('.toggle-autoplay').click();
-			this.toggleAutoPlay=true;
+		var e=document.querySelector('.toggle-autoplay');
+		if(!!e){
+			if(!!toggle&&this.toggleAutoPlay){
+					e.click();
+					this.toggleAutoPlay=false;
+			}else if(!toggle&&!!document.querySelector('.toggle-autoplay.yt-uix-button-toggled')){
+					e.click();
+					this.toggleAutoPlay=true;
+			}
 		}
 	},
-	toSecond:function(value,level){
-		if(level<=4&&level>0){
-			value=this.toSecond(value*[60,60,1000,1][4-level],level-1);
+	toSecond:function(v,l){
+		if(v.constructor==String&&l==1){
+			if(v.length>=3)return Number(v);
+			if(v.length==2)return Number(v)*10;
+			if(v.length==1)return Number(v)*100;
 		}
-		return Number(value);
+		if(l<=4&&l>0)	return this.toSecond(Number(v)*[60,60,1000,1][4-l],l-1);
+		return Number(v);
 	},
 	getSecond:function(e){
 		var t=e.value.match(this.format);
@@ -133,9 +137,6 @@ Replayer = {
 					+(str[2]>9?(str[2]+':'):str[2]>0?('0'+str[2]+':'):str[3]>0?'00:':'')
 					+(str[1]>9?(str[1]+'.'):str[1]>0?('0'+str[1]+'.'):'00.')
 					+(str[0]>99?str[0]:str[0]>9?'0'+str[0]:'00'+str[0]);
-	},
-	recordSaver:function(){
-		this.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:this.duration.start,end:this.duration.end,autoPlay:document.getElementById('replayToggle').textContent==this.text.Stop},null);
 	},
 	IndexedDB:{
 		isOpen:false,
@@ -199,7 +200,35 @@ Replayer = {
 			!Replayer.IndexedDB.isReqOpen&&Replayer.IndexedDB.openDB();
 		}
 	},
+	unload:{
+		ResetReplayerTimer:function(){Replayer.rmTimer()},
+		SaveAutoPlay:function(){window.localStorage['Replayer-isAutoPlay']=Replayer.toggleAutoPlay},
+		SaveRecord:function(){if(!!Replayer.duration.start)Replayer.IndexedDB.setInfo(yt.config_.VIDEO_ID,{start:Replayer.duration.start,end:Replayer.duration.end,autoPlay:document.getElementById('replayToggle').textContent==Replayer.text.Stop},null)},
+		state:false,
+		main:function(){
+			if(!Replayer.unload.state){
+				Replayer.unload.state=true;
+				for(var x in Replayer.unload){
+					Replayer.unload[x].constructor==Function&&Replayer.unload[x]();
+				}
+				Replayer.unload.state=false;
+			}
+		}
+	},
 	init:{
+		SetUnloadHandler:function(){
+			if(!Replayer.init.resetState.unloadHandler){
+				window.onbeforeunload=function(){Replayer.unload.main();};
+				Replayer.init.resetState.unloadHandler=true;
+			}
+		},
+		SetAutoPlay:function(){
+			if(!Replayer.init.resetState.setAutoPlay){
+				Replayer.toggleAutoPlay=(window.localStorage['Replayer-isAutoPlay']=='true');
+				Replayer.setAutoReplay(1);
+				Replayer.init.resetState.setAutoPlay=true;
+			}
+		},
 		ReplayerLayout:function(){
 			var e=document.getElementById('watch-like-dislike-buttons');
 			if(!Replayer.init.resetState.replayer&&!!e){
@@ -270,9 +299,8 @@ Replayer = {
 				Replayer.init.resetState.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
 			}
 		},
-		ResetReplayerTimer:function(){Replayer.rmTimer()},
 		ShowRecordedRange:function(){
-			if(!Replayer.init.resetState.IDBOpenReq){
+			if(Replayer.init.resetState.setAutoPlay&&!Replayer.init.resetState.IDBOpenReq){
 				Replayer.IndexedDB.init();
 				Replayer.init.resetState.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
 				Replayer.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,function(info){
@@ -290,11 +318,11 @@ Replayer = {
 		curVideoID:'',
 		changing:false,
 		resetState:{},
-		reset:function(){
+		main:function(){
 			if(!Replayer.init.changing){
 				Replayer.init.changing=true;
 				var isNeedReset=!!yt.config_.VIDEO_ID&&Replayer.init.curVideoID!=yt.config_.VIDEO_ID;
-				for(x in Replayer.init.resetState){
+				for(var x in Replayer.init.resetState){
 					if(isNeedReset=(isNeedReset||!Replayer.init.resetState[x]))break;
 				}
 				if(isNeedReset){
