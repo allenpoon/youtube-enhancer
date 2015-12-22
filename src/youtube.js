@@ -3,7 +3,7 @@ Replayer = {
 		Loop:'Loop',
 		Stop:'Stop',
 		PlaceHolderFrom:'From',
-		PlaceHolderTo:'From',
+		PlaceHolderTo:'To',
 		TooltipStartLoop:'Start Repeat',
 		TooltipEndLoop:'End Repeat',
 		TooltipFormat:'(H)(M)(S)(ms)',
@@ -28,16 +28,14 @@ Replayer = {
 		start=this.getSecond(document.getElementById('replayerTimerFrom'));
 		end=this.getSecond(document.getElementById('replayerTimerTo'));
 		
-		if(end==0){
+		if(end<=0||end>(Replayer.player.getDuration()+1)*1000){
 			end=Math.floor(Replayer.player.getDuration()*1000);
 		}
+		if(start<0)	start=0;
 		if(end<start){
 			var tmp=start;
 			start=end;
 			end=tmp;
-		}
-		if(end<=0||end>Replayer.player.getDuration()*1000){
-			end=Math.floor(Replayer.player.getDuration()*1000);
 		}
 		if(end-start<1){
 			if(Replayer.player.getDuration()*1000<start+1000){
@@ -45,9 +43,6 @@ Replayer = {
 			}else{
 				start=end-1000;
 			}
-		}
-		if(start<0){
-			start=0;
 		}
 		
 		if(start==this.duration.start&&end==this.duration.end)return false;
