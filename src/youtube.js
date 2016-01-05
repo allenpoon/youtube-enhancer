@@ -66,15 +66,15 @@ Replayer = {
 			setTimeout((function(a){return function(){Replayer.toggle(a)};})(isForceLoop),100);
 		else if(this.player.getAdState()>0){
 			this.player.querySelector('video').addEventListener('durationchange', (
-				function(a){
+				function(){
 					return function(){
 						var e=Replayer.player.querySelector('video');
 						if(!isNaN(e.duration)){
 							e.removeEventListener('durationchange',arguments.callee);
-							Replayer.toggle(a);
+							Replayer.toggle(isForceLoop);
 						}
 					}
-				})(isForceLoop)
+				})()
 			);
 			setTimeout((function(a){return function(){Replayer.toggle(a)}})(isForceLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
@@ -85,11 +85,13 @@ Replayer = {
 				this.setAutoReplay(0);
 				e.innerHTML=this.text.Stop;
 				e.title=e.dataset.tooltipText=this.text.TooltipEndLoop;
+				document.querySelector('video').loop=true;
 			}else{
 				this.rmTimer();
 				this.setAutoReplay(1);
 				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
+				document.querySelector('video').loop=false;
 			}
 		}
 	},
@@ -193,7 +195,7 @@ Replayer = {
 	reset:{
 		ReplayerTimer:function(){Replayer.rmTimer()},
 		Duration:function(){Replayer.duration={start:null,end:null}},
-		Player:function(){Replayer.player=document.getElementById('movie_player');},
+		Player:function(){Replayer.player=document.getElementById('movie_player');document.querySelector('video').loop=false;},
 		state:false,
 		main:function(){
 			if(!Replayer.reset.state){

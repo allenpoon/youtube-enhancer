@@ -1,5 +1,5 @@
 echo -n 'replayerBody="{' > youtube.js
-tail -n +2 src/youtube.js | sed -e "s/\t//g" | sed -e "/\/\//d" |  tr -d "\n" >> youtube.js
+tail -n +2 src/youtube.js | sed -e "s/\t//g" | sed -e "/\/\//d" |  tr -d "\n" | tr -d "\r" >> youtube.js
 echo '";' >> youtube.js
 echo "function init(){" >> youtube.js
 echo "		var script = document.createElement('script');" >> youtube.js
