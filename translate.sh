@@ -1,9 +1,9 @@
-echo -n 'replayerBody="{' > youtube.js
-tail -n +2 src/youtube.js | sed -e "s/\t//g" | sed -e "/\/\//d" |  tr -d "\n" | tr -d "\r" >> youtube.js
+echo -n 'replayerBody="' > youtube.js
+sed -e "/\/\//d" < src/youtube.js |  tr -d "\t\r\n" >> youtube.js
 echo '";' >> youtube.js
 echo "function init(){" >> youtube.js
 echo "		var script = document.createElement('script');" >> youtube.js
-echo "		script.innerHTML = 'Replayer='+replayerBody+';setInterval(Replayer.init.main,2000);';" >> youtube.js
+echo "		script.innerHTML = replayerBody+';if(!(\"\$\" in window)){$=function(a){return document.querySelector(a)}};setInterval(Replayer.init.main,2000);';" >> youtube.js
 echo "		try{" >> youtube.js
 echo "			document.querySelector('head').appendChild(script);" >> youtube.js
 echo "		}catch(newE){" >> youtube.js

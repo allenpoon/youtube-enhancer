@@ -1,4 +1,4 @@
-Replayer = {
+Replayer={
 	text:{
 		Loop:'Loop',
 		Stop:'Stop',
@@ -10,7 +10,10 @@ Replayer = {
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
-	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,/* add \\ before \ because of string */
+
+//	add \\ before \ because of string
+	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,
+
 	player:null,
 	toggleAutoPlay:false,
 	timer:null,
@@ -27,10 +30,12 @@ Replayer = {
 		}
 		this.timer=setTimeout(function(){Replayer.setTimeoutTimer()},this.duration.end-this.player.getCurrentTime()*1000);
 	},
-	setRange:function(){/* Return change of time range */
+
+//	Return change of time range
+	setRange:function(){
 		var start,end;
-		start=this.getSecond(document.getElementById('replayerTimerFrom'));
-		end=this.getSecond(document.getElementById('replayerTimerTo'));
+		start=this.getSecond($('#replayerTimerFrom'));
+		end=this.getSecond($('#replayerTimerTo'));
 		
 		if(end<=0||end>(this.player.getDuration()+1)*1000)
 			end=Math.floor(this.player.getDuration()*1000);
@@ -40,12 +45,13 @@ Replayer = {
 			start=end;
 			end=tmp;
 		}
-		if(end-start<1)
-			if(Replayer.player.getDuration()*1000<start+1000)
-				end=start+1000;
-			else 
-				start=end-1000;
-		
+
+//		if(end-start<1)
+//			if(Replayer.player.getDuration()*1000<start+1000)
+//				end=start+1000;
+//			else 
+//				start=end-1000;
+
 		if(start==this.duration.start&&end==this.duration.end)return false;
 
 		this.duration.start=start;
@@ -54,8 +60,8 @@ Replayer = {
 		return true;
 	},
 	showRepeatRange:function(){
-		document.getElementById('replayerTimerFrom').value=this.msToStr(this.duration.start);
-		document.getElementById('replayerTimerTo').value=this.msToStr(this.duration.end);
+		$('#replayerTimerFrom').value=this.msToStr(this.duration.start);
+		$('#replayerTimerTo').value=this.msToStr(this.duration.end);
 	},
 	rmTimer:function(){
 		clearTimeout(this.timer);
@@ -63,45 +69,41 @@ Replayer = {
 	},
 	toggle:function(isForceLoop){
 		if(!this.player || Object.keys(this.init.resetState).length!=0)
-			setTimeout((function(a){return function(){Replayer.toggle(a)};})(isForceLoop),100);
+			setTimeout(function(){Replayer.toggle(isForceLoop)},100);
 		else if(this.player.getAdState()>0){
-			this.player.querySelector('video').addEventListener('durationchange', (
-				function(){
-					return function(){
-						var e=Replayer.player.querySelector('video');
-						if(!isNaN(e.duration)){
-							e.removeEventListener('durationchange',arguments.callee);
-							Replayer.toggle(isForceLoop);
-						}
-					}
-				})()
-			);
-			setTimeout((function(a){return function(){Replayer.toggle(a)}})(isForceLoop),(this.player.getDuration()-this.player.getCurrentTime())*1000);
+			$('video').addEventListener('durationchange', function(){
+				var e=$('video');
+				if(!isNaN(e.duration)){
+					e.removeEventListener('durationchange',arguments.callee);
+					Replayer.toggle(isForceLoop);
+				}
+			});
+			setTimeout(function(){Replayer.toggle(isForceLoop)},(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
-			var e=document.getElementById('replayToggle');
+			var e=$('#replayToggle');
 			if(e.textContent==this.text.Loop||!!isForceLoop){
 				this.setRange()&&this.showRepeatRange();
 				this.setTimeoutTimer();
 				this.setAutoReplay(0);
 				e.innerHTML=this.text.Stop;
 				e.title=e.dataset.tooltipText=this.text.TooltipEndLoop;
-				document.querySelector('video').loop=true;
+				$('video').loop=true;
 			}else{
 				this.rmTimer();
 				this.setAutoReplay(1);
 				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
-				document.querySelector('video').loop=false;
+				$('video').loop=false;
 			}
 		}
 	},
 	setAutoReplay:function(toggle){
-		var e=document.querySelector('.toggle-autoplay');
+		var e=$('.toggle-autoplay');
 		if(!!e)
 			if(!!toggle&&this.toggleAutoPlay){
 					e.click();
 					this.toggleAutoPlay=false;
-			}else if(!toggle&&!!document.querySelector('.toggle-autoplay.yt-uix-button-toggled')){
+			}else if(!toggle&&!!$('.toggle-autoplay.yt-uix-button-toggled')){
 					e.click();
 					this.toggleAutoPlay=true;
 			}
@@ -195,7 +197,7 @@ Replayer = {
 	reset:{
 		ReplayerTimer:function(){Replayer.rmTimer()},
 		Duration:function(){Replayer.duration={start:null,end:null}},
-		Player:function(){Replayer.player=document.getElementById('movie_player');document.querySelector('video').loop=false;},
+		Player:function(){Replayer.player=$('#movie_player');$('video').loop=false;},
 		state:false,
 		main:function(){
 			if(!Replayer.reset.state){
@@ -235,7 +237,7 @@ Replayer = {
 			}
 		},
 		ReplayerLayout:function(){
-			var e=document.getElementById('watch8-secondary-actions');
+			var e=$('#watch8-secondary-actions');
 			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&Replayer.init.resetState.removeButton&&!!e){
 				var span,input,format='<br>'+Replayer.text.TooltipFormat+'<br>'+Replayer.format;
 				
@@ -276,7 +278,7 @@ Replayer = {
 		ChangeYouTubeLayout:function(){
 			var e,eL;
 			if(!(Replayer.init.resetState.likeDislike=!!Replayer.init.resetState.likeDislike)){
-				e=document.getElementById('watch-like-dislike-buttons');
+				e=$('#watch-like-dislike-buttons');
 				!!e&&(eL=e.querySelectorAll('.yt-uix-button-content'))||(eL=[]);
 				for(var i=0;i<eL.length;i++)
 					Replayer.init.resetState.likeDislike=!!eL[i]&&!!eL[i].parentNode.removeChild(eL[i]);
@@ -290,7 +292,7 @@ Replayer = {
 				Replayer.init.resetState.likeDislike=true;
 			}
 			if(!(Replayer.init.resetState.removeButton=!!Replayer.init.resetState.removeButton)){
-				e=document.getElementById('watch8-secondary-actions');
+				e=$('#watch8-secondary-actions');
 				!!e&&!!(e.removeChild(e.lastChild));
 				Replayer.init.resetState.removeButton=true;
 			}
@@ -330,9 +332,7 @@ Replayer = {
 					if(isNeedReset=(isNeedReset||!Replayer.init.resetState[x]))break;
 				if(isNeedReset){
 					Replayer.init.curVideoID=yt.config_.VIDEO_ID;
-/*
-					try{
-*/
+//					try{
 						for(var x in Replayer.init)
 							Replayer.init[x].constructor==Function&&Replayer.init[x]();
 						var result=true;
@@ -342,11 +342,9 @@ Replayer = {
 							Replayer.init.resetState={};
 						else 
 							setTimeout(Replayer.init.main);
-/*
-					}catch(e){
-						console.log(e);
-					}
-*/
+//					}catch(e){
+//						console.log(e);
+//					}
 				}
 				Replayer.init.changing=false;
 			}
