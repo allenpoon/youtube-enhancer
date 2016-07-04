@@ -1,10 +1,11 @@
 {
 	"name":"YT Replayer & HDer",
-	"version":"8.5",
+	"version":"8.6",
 	"manifest_version":2,
 	"description":"Replay The Video and Auto HD",
 	"content_scripts":[
 		{
+			"run_at": "document_end",
 			"matches": ["http://www.youtube.com/*", "https://www.youtube.com/*"],
 			"js": ["youtube.js"]
 		}

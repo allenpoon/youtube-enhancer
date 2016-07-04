@@ -6,7 +6,7 @@ Replayer={
 		PlaceHolderTo:'To',
 		TooltipStartLoop:'Start Repeat',
 		TooltipEndLoop:'End Repeat',
-		TooltipFormat:'(H)(M)(S)(ms)',
+		TooltipFormat:'[[h:]m:]s.ms',
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
@@ -239,13 +239,13 @@ Replayer={
 		ReplayerLayout:function(){
 			var e=$('#watch8-secondary-actions');
 			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&Replayer.init.resetState.removeButton&&!!e){
-				var span,input,format='<br>'+Replayer.text.TooltipFormat+'<br>'+Replayer.format;
+				var span,input,format=Replayer.text.TooltipFormat;
 				
 				span=document.createElement('span');
 				input=document.createElement('input');
 				input.placeholder=Replayer.text.PlaceHolderFrom;
 				input.size=8;
-				input.title=Replayer.text.TooltipFrom+format;
+				input.title=Replayer.text.TooltipFrom+' - '+format;
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
 				input.style.textAlign='center';
 				input.id='replayerTimerFrom';
@@ -256,7 +256,7 @@ Replayer={
 				span=document.createElement('span');
 				input=input.cloneNode(true);
 				input.placeholder=Replayer.text.PlaceHolderTo;
-				input.title=Replayer.text.TooltipTo+format;
+				input.title=Replayer.text.TooltipTo+' - '+format;
 				input.id='replayerTimerTo';
 				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
