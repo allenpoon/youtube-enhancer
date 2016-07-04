@@ -6,7 +6,7 @@ Replayer={
 		PlaceHolderTo:'To',
 		TooltipStartLoop:'Start Repeat',
 		TooltipEndLoop:'End Repeat',
-		TooltipFormat:'[[h:]m:]s.ms',
+		TooltipFormat:'[ [ [ h: ] m: ] s. ] ms',
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
@@ -209,7 +209,6 @@ Replayer={
 		}
 	},
 	unload:{
-		SaveAutoPlay:function(){window.localStorage['Replayer-isAutoPlay']=Replayer.toggleAutoPlay},
 		SaveRecord:function(){if(Replayer.duration.start!=null)Replayer.IndexedDB.setInfo(Replayer.init.curVideoID,{start:Replayer.duration.start,end:Replayer.duration.end,autoPlay:!!Replayer.timer},null)},
 		state:false,
 		main:function(){
@@ -224,21 +223,21 @@ Replayer={
 	init:{
 		SetUnloadHandler:function(){
 			if(!Replayer.init.unloadHandler){
-				window.onbeforeunload=function(){Replayer.unload.main();};
+				window.addEventListener('beforeunload', Replayer.unload.main);
 				Replayer.init.unloadHandler=true;
 			}
 			Replayer.init.resetState.unloadHandler=!!Replayer.init.unloadHandler;
 		},
 		SetAutoPlay:function(){
-			if(!(Replayer.init.resetState.setAutoPlay=!!Replayer.init.resetState.setAutoPlay)){
-				Replayer.toggleAutoPlay=(window.localStorage['Replayer-isAutoPlay']=='true');
+			if(Replayer.init.resetState.replayer&&!(Replayer.init.resetState.setAutoPlay=!!Replayer.init.resetState.setAutoPlay)&&Replayer.init.resetState.IDBOpenReq){
+				Replayer.toggleAutoPlay=Replayer.autoPlay;
 				Replayer.setAutoReplay(1);
 				Replayer.init.resetState.setAutoPlay=true;
 			}
 		},
 		ReplayerLayout:function(){
 			var e=$('#watch8-secondary-actions');
-			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&Replayer.init.resetState.removeButton&&!!e){
+			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&!!e){
 				var span,input,format=Replayer.text.TooltipFormat;
 				
 				span=document.createElement('span');
@@ -271,30 +270,27 @@ Replayer={
 				input.textContent=Replayer.text.Loop;
 				span.appendChild(input);
 				e.appendChild(span);
-				
-				Replayer.init.resetState.replayer=true;
 			}
+			if(!!$('#watch8-secondary-actions #replayerTimerFrom')&&!!$('#watch8-secondary-actions #replayerTimerTo')&&!!$('#watch8-secondary-actions #replayToggle'))
+				Replayer.init.resetState.replayer=true;
 		},
 		ChangeYouTubeLayout:function(){
 			var e,eL;
-			if(!(Replayer.init.resetState.likeDislike=!!Replayer.init.resetState.likeDislike)){
-				e=$('#watch-like-dislike-buttons');
-				!!e&&(eL=e.querySelectorAll('.yt-uix-button-content'))||(eL=[]);
-				for(var i=0;i<eL.length;i++)
-					Replayer.init.resetState.likeDislike=!!eL[i]&&!!eL[i].parentNode.removeChild(eL[i]);
-				!!e&&(eL=e.querySelectorAll('button'))||(eL=[]);
-				for(var i=0;i<eL.length;i++)
-					if(!!eL[i]){
-						eL[i].style.padding='0 5px';
-						eL[i].querySelector('span').style.margin='0';
-						eL[i].querySelector('.yt-uix-button-icon').style.margin='0';
-					}
-				Replayer.init.resetState.likeDislike=true;
-			}
-			if(!(Replayer.init.resetState.removeButton=!!Replayer.init.resetState.removeButton)){
-				e=$('#watch8-secondary-actions');
-				!!e&&!!(e.removeChild(e.lastChild));
-				Replayer.init.resetState.removeButton=true;
+			if(Replayer.init.resetState.replayer){
+				if(!(Replayer.init.resetState.likeDislike=!!Replayer.init.resetState.likeDislike)){
+					e=$('#watch-like-dislike-buttons');
+					!!e&&(eL=e.querySelectorAll('.yt-uix-button-content'))||(eL=[]);
+					for(var i=0;i<eL.length;i++)
+						Replayer.init.resetState.likeDislike=!!eL[i]&&!!eL[i].parentNode.removeChild(eL[i]);
+					!!e&&(eL=e.querySelectorAll('button'))||(eL=[]);
+					for(var i=0;i<eL.length;i++)
+						if(!!eL[i]){
+							eL[i].style.padding='0 5px';
+							eL[i].querySelector('span').style.margin='0';
+							eL[i].querySelector('.yt-uix-button-icon').style.margin='0';
+						}
+					Replayer.init.resetState.likeDislike=true;
+				}
 			}
 		},
 		ChangeQuanlity:function(){
@@ -303,15 +299,16 @@ Replayer={
 			Replayer.init.resetState.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
 		},
 		ShowRecordedRange:function(){
-			if(!(Replayer.init.resetState.IDBOpenReq=!!Replayer.init.resetState.IDBOpenReq)&&Replayer.init.resetState.setAutoPlay){
+			if(Replayer.init.resetState.replayer&&!(Replayer.init.resetState.IDBOpenReq=!!Replayer.init.resetState.IDBOpenReq)){
 				Replayer.IndexedDB.init();
 				Replayer.init.resetState.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
 				Replayer.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,function(info){
 					if(!!info){
 						Replayer.duration.start=info.start;
 						Replayer.duration.end=info.end;
+						Replayer.autoPlay=info.autoPlay;
 						Replayer.showRepeatRange();
-						if(!!info.autoPlay)
+						if(!!Replayer.autoPlay)
 							Replayer.toggle(true);
 					}
 				});
