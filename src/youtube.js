@@ -2,8 +2,12 @@ Replayer={
 	text:{
 		Loop:'Loop',
 		Stop:'Stop',
+		ButtonFrom:'A',
+		ButtonTo:'B',
 		PlaceHolderFrom:'From',
 		PlaceHolderTo:'To',
+		TooltipFromButton:'Set current position as start of repeat',
+		TooltipToButton:'Set current position as end of repeat',
 		TooltipStartLoop:'Start Repeat',
 		TooltipEndLoop:'End Repeat',
 		TooltipFormat:'[ [ [ h: ] m: ] s. ] ms',
@@ -58,6 +62,20 @@ Replayer={
 		this.duration.end=end;
 		
 		return true;
+	},
+	setA:function(){
+		this.duration.start=Math.floor(this.player.getCurrentTime()*1000);
+		if(!this.duration.end||this.duration.start>this.duration.end)
+			this.duration.end=Math.floor(this.player.getDuration()*1000);
+		this.showRepeatRange();
+		this.toggle(true);
+	},
+	setB:function(){
+		this.duration.end=Math.floor(this.player.getCurrentTime()*1000);
+		if(!this.duration.start||this.duration.start>this.duration.end||this.duration.start<0)
+			this.duration.start=0;
+		this.showRepeatRange();
+		this.toggle(true);
 	},
 	showRepeatRange:function(){
 		$('#replayerTimerFrom').value=this.msToStr(this.duration.start);
@@ -239,7 +257,7 @@ Replayer={
 			var e=$('#watch8-secondary-actions');
 			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&!!e){
 				var span,input,format=Replayer.text.TooltipFormat;
-				
+
 				span=document.createElement('span');
 				input=document.createElement('input');
 				input.placeholder=Replayer.text.PlaceHolderFrom;
@@ -253,9 +271,32 @@ Replayer={
 				e.appendChild(span);
 				
 				span=document.createElement('span');
-				input=input.cloneNode(true);
+				input=document.createElement('button');
+				input.id='replayerA';
+				input.title=Replayer.text.TooltipFromButton;
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.addEventListener('click',function(){Replayer.setA()},false);
+				input.textContent=Replayer.text.ButtonFrom;
+				span.appendChild(input);
+				e.appendChild(span);
+				
+				span=document.createElement('span');
+				input=document.createElement('button');
+				input.id='replayerB';
+				input.title=Replayer.text.TooltipToButton;
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.addEventListener('click',function(){Replayer.setB()},false);
+				input.textContent=Replayer.text.ButtonTo;
+				span.appendChild(input);
+				e.appendChild(span);
+
+				span=document.createElement('span');
+				input=document.createElement('input');
 				input.placeholder=Replayer.text.PlaceHolderTo;
+				input.size=8;
 				input.title=Replayer.text.TooltipTo+' - '+format;
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.style.textAlign='center';
 				input.id='replayerTimerTo';
 				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
@@ -271,7 +312,11 @@ Replayer={
 				span.appendChild(input);
 				e.appendChild(span);
 			}
-			if(!!$('#watch8-secondary-actions #replayerTimerFrom')&&!!$('#watch8-secondary-actions #replayerTimerTo')&&!!$('#watch8-secondary-actions #replayToggle'))
+			if(!!$('#watch8-secondary-actions #replayerTimerFrom')&&
+				!!$('#watch8-secondary-actions #replayerA')&&
+				!!$('#watch8-secondary-actions #replayerB')&&
+				!!$('#watch8-secondary-actions #replayerTimerTo')&&
+				!!$('#watch8-secondary-actions #replayToggle'))
 				Replayer.init.resetState.replayer=true;
 		},
 		ChangeYouTubeLayout:function(){

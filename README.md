@@ -7,6 +7,7 @@
 2. Custom range loop: detail see [Input format](#input-format)
 3. Auto save range
 4. Auto loop if it set to loop in that video last time
+5. A-B Repeat button
 
 ## Install
 1. Go to chrome://extensions/
