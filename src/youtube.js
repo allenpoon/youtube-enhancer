@@ -86,7 +86,7 @@ Replayer={
 		this.timer=null;
 	},
 	toggle:function(isForceLoop){
-		if(!this.player || Object.keys(this.init.resetState).length!=0)
+		if(!this.player||Object.keys(this.init.resetState).length!=0)
 			setTimeout(function(){Replayer.toggle(isForceLoop)},100);
 		else if(this.player.getAdState()>0){
 			$('video').addEventListener('durationchange', function(){
@@ -227,7 +227,18 @@ Replayer={
 		}
 	},
 	unload:{
-		SaveRecord:function(){if(Replayer.duration.start!=null)Replayer.IndexedDB.setInfo(Replayer.init.curVideoID,{start:Replayer.duration.start,end:Replayer.duration.end,autoPlay:!!Replayer.timer},null)},
+		SaveRecord:function(){
+			if(Replayer.duration.start!=null)
+				Replayer.IndexedDB.setInfo(
+					Replayer.init.curVideoID,
+					{
+						start:Replayer.duration.start,
+						end:Replayer.duration.end,
+						autoPlay:!!Replayer.timer
+					},
+					null
+				)
+		},
 		state:false,
 		main:function(){
 			if(!Replayer.unload.state){
@@ -263,28 +274,28 @@ Replayer={
 				input.placeholder=Replayer.text.PlaceHolderFrom;
 				input.size=8;
 				input.title=Replayer.text.TooltipFrom+' - '+format;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.style.textAlign='center';
 				input.id='replayerTimerFrom';
 				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
 				e.appendChild(span);
-				
+
 				span=document.createElement('span');
 				input=document.createElement('button');
 				input.id='replayerA';
 				input.title=Replayer.text.TooltipFromButton;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.addEventListener('click',function(){Replayer.setA()},false);
 				input.textContent=Replayer.text.ButtonFrom;
 				span.appendChild(input);
 				e.appendChild(span);
-				
+
 				span=document.createElement('span');
 				input=document.createElement('button');
 				input.id='replayerB';
 				input.title=Replayer.text.TooltipToButton;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.addEventListener('click',function(){Replayer.setB()},false);
 				input.textContent=Replayer.text.ButtonTo;
 				span.appendChild(input);
@@ -295,18 +306,18 @@ Replayer={
 				input.placeholder=Replayer.text.PlaceHolderTo;
 				input.size=8;
 				input.title=Replayer.text.TooltipTo+' - '+format;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.style.textAlign='center';
 				input.id='replayerTimerTo';
 				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
 				span.appendChild(input);
 				e.appendChild(span);
-				
+
 				span=document.createElement('span');
 				input=document.createElement('button');
 				input.id='replayToggle';
 				input.title=Replayer.text.TooltipStartLoop;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text';
+				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.addEventListener('click',function(){Replayer.toggle();},false);
 				input.textContent=Replayer.text.Loop;
 				span.appendChild(input);
@@ -365,28 +376,32 @@ Replayer={
 		main:function(){
 			if(!Replayer.init.changing){
 				Replayer.init.changing=true;
-				if(Replayer.init.curVideoID!=yt.config_.VIDEO_ID){
-					!!Replayer.init.curVideoID&&Replayer.unload.main();
-					Replayer.reset.main();
-				}
-				var isNeedReset=(!!yt.config_.VIDEO_ID&&Replayer.init.curVideoID!=yt.config_.VIDEO_ID);
-				for(var x in Replayer.init.resetState)
-					if(isNeedReset=(isNeedReset||!Replayer.init.resetState[x]))break;
-				if(isNeedReset){
-					Replayer.init.curVideoID=yt.config_.VIDEO_ID;
-//					try{
-						for(var x in Replayer.init)
-							Replayer.init[x].constructor==Function&&Replayer.init[x]();
-						var result=true;
-						for(var x in Replayer.init.resetState)
-							result&=Replayer.init.resetState[x];
-						if(result)
-							Replayer.init.resetState={};
-						else 
-							setTimeout(Replayer.init.main);
-//					}catch(e){
-//						console.log(e);
-//					}
+				if(!yt.config_.VIDEO_ID)
+					Replayer.init.curVideoID=null;
+				else{
+					if(Replayer.init.curVideoID!=yt.config_.VIDEO_ID){
+						!!Replayer.init.curVideoID&&Replayer.unload.main();
+						Replayer.reset.main();
+					}
+					var isNeedReset=(!!yt.config_.VIDEO_ID&&Replayer.init.curVideoID!=yt.config_.VIDEO_ID);
+					for(var x in Replayer.init.resetState)
+						if(isNeedReset=(isNeedReset||!Replayer.init.resetState[x]))break;
+					if(isNeedReset){
+						Replayer.init.curVideoID=yt.config_.VIDEO_ID;
+//						try{
+							for(var x in Replayer.init)
+								Replayer.init[x].constructor==Function&&Replayer.init[x]();
+							var result=true;
+							for(var x in Replayer.init.resetState)
+								result&=Replayer.init.resetState[x];
+							if(result)
+								Replayer.init.resetState={};
+							else 
+								setTimeout(Replayer.init.main);
+//						}catch(e){
+//							console.log(e);
+//						}
+					}
 				}
 				Replayer.init.changing=false;
 			}
