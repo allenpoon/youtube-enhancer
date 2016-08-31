@@ -1,38 +1,59 @@
 Replayer={
 	text:{
-		Loop:'Loop',
-		Stop:'Stop',
+		Loop:'Looping',
+		Crop:'Cropped',
+		Stop:'Stopped',
 		ButtonFrom:'A',
 		ButtonTo:'B',
 		PlaceHolderFrom:'From',
 		PlaceHolderTo:'To',
 		TooltipFromButton:'Set current position as start of repeat',
 		TooltipToButton:'Set current position as end of repeat',
-		TooltipStartLoop:'Start Repeat',
-		TooltipEndLoop:'End Repeat',
+		TooltipLoopToCrop:'Change to Crop',
+		TooltipCropToStop:'Change to Stop',
+		TooltipStopToLoop:'Change to Loop',
 		TooltipFormat:'[ [ [ h: ] m: ] s. ] ms',
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
+	mode:{
+		stop: 1,
+		loop: 2,
+		crop: 3
+	},
+	curMode: 1,
 
 //	add \\ before \ because of string
 	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,
 
 	player:null,
-	toggleAutoPlay:false,
 	timer:null,
 	duration:{
 		start:null,
 		end:null
 	},
-	setTimeoutTimer:function(){
+	setStop:function(){
 		this.rmTimer();
-		if(!(this.player.getPlayerState()===1&&this.duration.end>this.player.getCurrentTime()*1000&&this.player.getCurrentTime()*1000>=this.duration.start)){
+	},
+	setLoop:function(){
+		this.rmTimer();
+		if(this.player.getPlayerState()!==1||this.duration.end<=this.player.getCurrentTime()*1000||this.player.getCurrentTime()*1000<this.duration.start){
 			if(this.player.getPlayerState()===2)
 				this.player.playVideo();
-			this.player.seekTo(Replayer.duration.start/1000,true);
+			this.player.seekTo(this.duration.start/1000,true);
 		}
-		this.timer=setTimeout(function(){Replayer.setTimeoutTimer()},this.duration.end-this.player.getCurrentTime()*1000);
+		this.timer=setTimeout(function(){Replayer.setLoop()},this.duration.end-this.player.getCurrentTime()*1000);
+	},
+	setCrop:function(){
+		this.rmTimer();
+		if(this.player.getPlayerState()===1||this.player.getPlayerState()===2)
+			if(this.player.getCurrentTime()*1000<this.duration.start){
+				if(this.player.getPlayerState()===2)
+					this.player.playVideo();
+				this.player.seekTo(this.duration.start/1000,true);
+				this.timer=setTimeout(function(){Replayer.setCrop()},this.duration.end-this.player.getCurrentTime()*1000);
+			}else if(this.duration.end<=this.player.getCurrentTime()*1000)
+				this.player.seekTo(this.player.getDuration(),true);
 	},
 
 //	Return change of time range
@@ -50,12 +71,6 @@ Replayer={
 			end=tmp;
 		}
 
-//		if(end-start<1)
-//			if(Replayer.player.getDuration()*1000<start+1000)
-//				end=start+1000;
-//			else 
-//				start=end-1000;
-
 		if(start==this.duration.start&&end==this.duration.end)return false;
 
 		this.duration.start=start;
@@ -68,14 +83,14 @@ Replayer={
 		if(!this.duration.end||this.duration.start>this.duration.end)
 			this.duration.end=Math.floor(this.player.getDuration()*1000);
 		this.showRepeatRange();
-		this.toggle(true);
+		this.toggle(this.curMode);
 	},
 	setB:function(){
 		this.duration.end=Math.floor(this.player.getCurrentTime()*1000);
 		if(!this.duration.start||this.duration.start>this.duration.end||this.duration.start<0)
 			this.duration.start=0;
 		this.showRepeatRange();
-		this.toggle(true);
+		this.toggle(this.curMode);
 	},
 	showRepeatRange:function(){
 		$('#replayerTimerFrom').value=this.msToStr(this.duration.start);
@@ -85,46 +100,42 @@ Replayer={
 		clearTimeout(this.timer);
 		this.timer=null;
 	},
-	toggle:function(isForceLoop){
+	toggle:function(mode){
 		if(!this.player||Object.keys(this.init.resetState).length!=0)
-			setTimeout(function(){Replayer.toggle(isForceLoop)},100);
+			setTimeout(function(){Replayer.toggle(mode)},100);
 		else if(this.player.getAdState()>0){
 			$('video').addEventListener('durationchange', function(){
 				var e=$('video');
 				if(!isNaN(e.duration)){
 					e.removeEventListener('durationchange',arguments.callee);
-					Replayer.toggle(isForceLoop);
+					Replayer.toggle(mode);
 				}
 			});
-			setTimeout(function(){Replayer.toggle(isForceLoop)},(this.player.getDuration()-this.player.getCurrentTime())*1000);
+			setTimeout(function(){Replayer.toggle(mode)},(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
 			var e=$('#replayToggle');
-			if(e.textContent==this.text.Loop||!!isForceLoop){
+			if(mode==this.mode.loop||!mode&&this.curMode==this.mode.stop){
+				this.curMode=this.mode.loop;
 				this.setRange()&&this.showRepeatRange();
-				this.setTimeoutTimer();
-				this.setAutoReplay(0);
-				e.innerHTML=this.text.Stop;
-				e.title=e.dataset.tooltipText=this.text.TooltipEndLoop;
-				$('video').loop=true;
-			}else{
-				this.rmTimer();
-				this.setAutoReplay(1);
+				this.setLoop();
 				e.innerHTML=this.text.Loop;
-				e.title=e.dataset.tooltipText=this.text.TooltipStartLoop;
+				e.title=e.dataset.tooltipText=this.text.TooltipLoopToCrop;
+				$('video').loop=true;
+			}else if(mode==this.mode.crop||!mode&&this.curMode==this.mode.loop){
+				this.curMode=this.mode.crop;
+				this.setRange()&&this.showRepeatRange();
+				this.setCrop();
+				e.innerHTML=this.text.Crop;
+				e.title=e.dataset.tooltipText=this.text.TooltipCropToStop;
+				$('video').loop=false;
+			}else{
+				this.curMode=this.mode.stop;
+				this.rmTimer();
+				e.innerHTML=this.text.Stop;
+				e.title=e.dataset.tooltipText=this.text.TooltipStopToLoop;
 				$('video').loop=false;
 			}
 		}
-	},
-	setAutoReplay:function(toggle){
-		var e=$('.toggle-autoplay');
-		if(!!e)
-			if(!!toggle&&this.toggleAutoPlay){
-					e.click();
-					this.toggleAutoPlay=false;
-			}else if(!toggle&&!!$('.toggle-autoplay.yt-uix-button-toggled')){
-					e.click();
-					this.toggleAutoPlay=true;
-			}
 	},
 	toSecond:function(v,l){
 		if(v.constructor==String&&l==1){
@@ -188,6 +199,8 @@ Replayer={
 				function(vid,cb){
 					return function(){
 						Replayer.IndexedDB.db.transaction(['replayRange']).objectStore('replayRange').get(vid).onsuccess=function(evt){
+// for Database upgrade
+							!!evt.target.result&&!evt.target.result.curMode&&(evt.target.result.curMode=!!evt.target.result.autoPlay?Replayer.mode.loop:Replayer.mode.stop)&&delete evt.target.result.autoPlay;
 							!!cb&&cb.constructor==Function&&cb(evt.target.result);
 						};
 					};
@@ -234,7 +247,7 @@ Replayer={
 					{
 						start:Replayer.duration.start,
 						end:Replayer.duration.end,
-						autoPlay:!!Replayer.timer
+						curMode:Replayer.curMode
 					},
 					null
 				)
@@ -257,13 +270,6 @@ Replayer={
 			}
 			Replayer.init.resetState.unloadHandler=!!Replayer.init.unloadHandler;
 		},
-		SetAutoPlay:function(){
-			if(Replayer.init.resetState.replayer&&!(Replayer.init.resetState.setAutoPlay=!!Replayer.init.resetState.setAutoPlay)&&Replayer.init.resetState.IDBOpenReq){
-				Replayer.toggleAutoPlay=Replayer.autoPlay;
-				Replayer.setAutoReplay(1);
-				Replayer.init.resetState.setAutoPlay=true;
-			}
-		},
 		ReplayerLayout:function(){
 			var e=$('#watch8-secondary-actions');
 			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&!!e){
@@ -277,7 +283,7 @@ Replayer={
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.style.textAlign='center';
 				input.id='replayerTimerFrom';
-				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
+				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(Replayer.curMode!=Replayer.mode.stop?Replayer.curMode:Replayer.mode.crop);};},false);
 				span.appendChild(input);
 				e.appendChild(span);
 
@@ -309,17 +315,17 @@ Replayer={
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.style.textAlign='center';
 				input.id='replayerTimerTo';
-				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(true);};},false);
+				input.addEventListener('keyup',function(){if(window.event.keyCode==13){Replayer.toggle(Replayer.curMode!=Replayer.mode.stop?Replayer.curMode:Replayer.mode.crop);};},false);
 				span.appendChild(input);
 				e.appendChild(span);
 
 				span=document.createElement('span');
 				input=document.createElement('button');
 				input.id='replayToggle';
-				input.title=Replayer.text.TooltipStartLoop;
+				input.title=Replayer.text.TooltipStopToLoop;
 				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
 				input.addEventListener('click',function(){Replayer.toggle();},false);
-				input.textContent=Replayer.text.Loop;
+				input.textContent=Replayer.text.Stop;
 				span.appendChild(input);
 				e.appendChild(span);
 			}
@@ -354,7 +360,7 @@ Replayer={
 				Replayer.player.setPlaybackQuality(Replayer.player.getAvailableQualityLevels()[0]);
 			Replayer.init.resetState.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
 		},
-		ShowRecordedRange:function(){
+		LoadInfoAndRun:function(){
 			if(Replayer.init.resetState.replayer&&!(Replayer.init.resetState.IDBOpenReq=!!Replayer.init.resetState.IDBOpenReq)){
 				Replayer.IndexedDB.init();
 				Replayer.init.resetState.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
@@ -362,10 +368,9 @@ Replayer={
 					if(!!info){
 						Replayer.duration.start=info.start;
 						Replayer.duration.end=info.end;
-						Replayer.autoPlay=info.autoPlay;
+						Replayer.curMode=info.curMode;
 						Replayer.showRepeatRange();
-						if(!!Replayer.autoPlay)
-							Replayer.toggle(true);
+						Replayer.toggle(info.curMode);
 					}
 				});
 			}
