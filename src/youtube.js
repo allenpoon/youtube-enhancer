@@ -46,14 +46,14 @@ Replayer={
 	},
 	setCrop:function(){
 		this.rmTimer();
-		if(this.player.getPlayerState()===1||this.player.getPlayerState()===2)
+		if(this.player.getPlayerState()===1)
 			if(this.player.getCurrentTime()*1000<this.duration.start){
-				if(this.player.getPlayerState()===2)
-					this.player.playVideo();
 				this.player.seekTo(this.duration.start/1000,true);
 				this.timer=setTimeout(function(){Replayer.setCrop()},this.duration.end-this.player.getCurrentTime()*1000);
 			}else if(this.duration.end<=this.player.getCurrentTime()*1000)
 				this.player.seekTo(this.player.getDuration(),true);
+			else 
+				this.timer=setTimeout(function(){Replayer.setCrop()},this.duration.end-this.player.getCurrentTime()*1000);
 	},
 
 //	Return change of time range
