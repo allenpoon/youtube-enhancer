@@ -42,20 +42,21 @@ Replayer={
 				this.player.playVideo();
 			this.player.seekTo(this.duration.start/1000,true);
 		}
-		this.timer=setTimeout(function(){Replayer.setLoop()},this.duration.end-this.player.getCurrentTime()*1000);
+		this.setTimer(function(){Replayer.setLoop()});
 	},
 	setCrop:function(){
 		this.rmTimer();
-		if(this.player.getPlayerState()===1)
-			if(this.player.getCurrentTime()*1000<this.duration.start){
+		if(this.duration.end<=this.player.getCurrentTime()*1000)
+			this.player.seekTo(this.player.getDuration(),true);
+		else{
+			if(this.player.getCurrentTime()*1000<this.duration.start)
 				this.player.seekTo(this.duration.start/1000,true);
-				this.timer=setTimeout(function(){Replayer.setCrop()},this.duration.end-this.player.getCurrentTime()*1000);
-			}else if(this.duration.end<=this.player.getCurrentTime()*1000)
-				this.player.seekTo(this.player.getDuration(),true);
-			else 
-				this.timer=setTimeout(function(){Replayer.setCrop()},this.duration.end-this.player.getCurrentTime()*1000);
+			this.setTimer(function(){Replayer.setCrop()});
+		}
 	},
-
+	setTimer:function(f){
+		this.timer=setTimeout(f,this.duration.end-this.player.getCurrentTime()*1000);
+	},
 //	Return change of time range
 	setRange:function(){
 		var start,end;
@@ -101,8 +102,8 @@ Replayer={
 		this.timer=null;
 	},
 	toggle:function(mode){
-		if(!this.player||Object.keys(this.init.resetState).length!=0)
-			setTimeout(function(){Replayer.toggle(mode)},100);
+		if(!this.player||Object.keys(this.init.state).length!=0)
+			setTimeout(function(m){Replayer.toggle(m)},100,mode);
 		else if(this.player.getAdState()>0){
 			$('video').addEventListener('durationchange', function(){
 				var e=$('video');
@@ -111,7 +112,7 @@ Replayer={
 					Replayer.toggle(mode);
 				}
 			});
-			setTimeout(function(){Replayer.toggle(mode)},(this.player.getDuration()-this.player.getCurrentTime())*1000);
+			setTimeout(function(m){Replayer.toggle(m)},(this.player.getDuration()-this.player.getCurrentTime())*1000,mode);
 		}else{
 			var e=$('#replayToggle');
 			if(mode==this.mode.loop||!mode&&this.curMode==this.mode.stop){
@@ -157,6 +158,7 @@ Replayer={
 		}
 		return !!count?(this.toSecond(t[1],count)+this.toSecond(t[2],count-1)+this.toSecond(t[3],count-2)+this.toSecond(t[4],count-3)):0;
 	},
+// var str = [<ms>, <s>, <m>, <h>]
 	msToStr:function(t){
 		var str=[t%1000,(Math.floor(t/1000))%60,(Math.floor(t/(60*1000)))%60,(Math.floor(t/(60*60*1000)))];
 		return(str[3]>9?(str[3]+':'):str[3]>0?('0'+str[3]+':'):'')
@@ -171,12 +173,15 @@ Replayer={
 		db:null,
 		waitingFunctionList:[],
 		openDB:function(){
-			if(!!window.indexedDB&&!this.isOpen&&!this.isReqOpen){
+			if(!window.indexedDB)
+				console.log('IndexedDB is not support, no data will be saved.');
+			else if(!this.isOpen&&!this.isReqOpen){
 				this.dbreq=window.indexedDB.open('YouTubeReplayer',1);
 				this.dbreq.onsuccess=function(e){
-					Replayer.IndexedDB.db=e.target.result;
-					Replayer.IndexedDB.isOpen=true;
-					Replayer.IndexedDB.runWaitingFunction();
+					var o=Replayer.IndexedDB;
+					o.db=e.target.result;
+					o.isOpen=true;
+					o.runWaitingFunction();
 				};
 				this.dbreq.onerror=function(e){};
 				this.dbreq.onupgradeneeded=function(evt){
@@ -190,13 +195,13 @@ Replayer={
 			this.isReqOpen=true;
 		},
 		runWaitingFunction:function(){
-			for(var i=0;i<Replayer.IndexedDB.waitingFunctionList.length;i++)
-				!!Replayer.IndexedDB.waitingFunctionList[i]&&Replayer.IndexedDB.waitingFunctionList[i].constructor==Function&&Replayer.IndexedDB.waitingFunctionList[i]();
-			Replayer.IndexedDB.waitingFunctionList=[];
+			var f;
+			while(f=this.waitingFunctionList.shift())
+				f.constructor==Function&&f();
 		},
 		getInfoByVideoID:function(videoID,callback){
-			this.waitingFunctionList[this.waitingFunctionList.length]=(
-				function(vid,cb){
+			this.waitingFunctionList.push(
+				(function(vid,cb){
 					return function(){
 						Replayer.IndexedDB.db.transaction(['replayRange']).objectStore('replayRange').get(vid).onsuccess=function(evt){
 // for Database upgrade
@@ -204,25 +209,25 @@ Replayer={
 							!!cb&&cb.constructor==Function&&cb(evt.target.result);
 						};
 					};
-				}
-			)(videoID,callback);
+				})(videoID,callback)
+			);
 			this.openDB();
 		},
 		setInfo:function(videoID,Info,callback){
-			this.waitingFunctionList[this.waitingFunctionList.length]=(
-				function(vid,data,cb){
+			this.waitingFunctionList.push(
+				(function(vid,data,cb){
 					return function(){
-						data.videoID=videoID;
+						data.videoID=vid;
 						Replayer.IndexedDB.db.transaction(['replayRange'],'readwrite').objectStore('replayRange').put(data).onsuccess=function(evt){
 							!!cb&&cb.constructor==Function&&cb(evt.target.result);
 						};
 					};
-				}
-			)(videoID,Info,callback);
+				})(videoID,Info,callback)
+			);
 			this.openDB();
 		},
 		init:function(){
-			!Replayer.IndexedDB.isReqOpen&&Replayer.IndexedDB.openDB();
+			!this.isReqOpen&&this.openDB();
 		}
 	},
 	reset:{
@@ -231,11 +236,11 @@ Replayer={
 		Player:function(){Replayer.player=$('#movie_player');$('video').loop=false;},
 		state:false,
 		main:function(){
-			if(!Replayer.reset.state){
-				Replayer.reset.state=true;
-				for(var x in Replayer.reset)
-					Replayer.reset[x].constructor==Function&&Replayer.reset[x]();
-				Replayer.reset.state=false;
+			if(!this.state){
+				this.state=true;
+				for(var x in this)
+					this[x].constructor==Function&&this[x]();
+				this.state=false;
 			}
 		}
 	},
@@ -254,25 +259,25 @@ Replayer={
 		},
 		state:false,
 		main:function(){
-			if(!Replayer.unload.state){
-				Replayer.unload.state=true;
-				for(var x in Replayer.unload)
-					Replayer.unload[x].constructor==Function&&Replayer.unload[x]();
-				Replayer.unload.state=false;
+			if(!this.state){
+				this.state=true;
+				for(var x in this)
+					this[x].constructor==Function&&this[x]();
+				this.state=false;
 			}
 		}
 	},
 	init:{
 		SetUnloadHandler:function(){
-			if(!Replayer.init.unloadHandler){
-				window.addEventListener('beforeunload', Replayer.unload.main);
-				Replayer.init.unloadHandler=true;
+			if(!this.unloadHandler){
+				window.addEventListener('beforeunload', function(){Replayer.unload.main()});
+				this.unloadHandler=true;
 			}
-			Replayer.init.resetState.unloadHandler=!!Replayer.init.unloadHandler;
+			this.state.unloadHandler=!!this.unloadHandler;
 		},
 		ReplayerLayout:function(){
 			var e=$('#watch8-secondary-actions');
-			if(!(Replayer.init.resetState.replayer=!!Replayer.init.resetState.replayer)&&!!e){
+			if(!(this.state.replayer=!!this.state.replayer)&&!!e){
 				var span,input,format=Replayer.text.TooltipFormat;
 
 				span=document.createElement('span');
@@ -334,16 +339,16 @@ Replayer={
 				!!$('#watch8-secondary-actions #replayerB')&&
 				!!$('#watch8-secondary-actions #replayerTimerTo')&&
 				!!$('#watch8-secondary-actions #replayToggle'))
-				Replayer.init.resetState.replayer=true;
+				this.state.replayer=true;
 		},
 		ChangeYouTubeLayout:function(){
 			var e,eL;
-			if(Replayer.init.resetState.replayer){
-				if(!(Replayer.init.resetState.likeDislike=!!Replayer.init.resetState.likeDislike)){
+			if(this.state.replayer){
+				if(!(this.state.likeDislike=!!this.state.likeDislike)){
 					e=$('#watch-like-dislike-buttons');
 					!!e&&(eL=e.querySelectorAll('.yt-uix-button-content'))||(eL=[]);
 					for(var i=0;i<eL.length;i++)
-						Replayer.init.resetState.likeDislike=!!eL[i]&&!!eL[i].parentNode.removeChild(eL[i]);
+						this.state.likeDislike=!!eL[i]&&!!eL[i].parentNode.removeChild(eL[i]);
 					!!e&&(eL=e.querySelectorAll('button'))||(eL=[]);
 					for(var i=0;i<eL.length;i++)
 						if(!!eL[i]){
@@ -351,19 +356,19 @@ Replayer={
 							eL[i].querySelector('span').style.margin='0';
 							eL[i].querySelector('.yt-uix-button-icon').style.margin='0';
 						}
-					Replayer.init.resetState.likeDislike=true;
+					this.state.likeDislike=true;
 				}
 			}
 		},
 		ChangeQuanlity:function(){
-			if(!Replayer.init.resetState.playerQuality)
+			if(!this.state.playerQuality)
 				Replayer.player.setPlaybackQuality(Replayer.player.getAvailableQualityLevels()[0]);
-			Replayer.init.resetState.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
+			this.state.playerQuality=(Replayer.player.getPlaybackQuality()==Replayer.player.getAvailableQualityLevels()[0]);
 		},
 		LoadInfoAndRun:function(){
-			if(Replayer.init.resetState.replayer&&!(Replayer.init.resetState.IDBOpenReq=!!Replayer.init.resetState.IDBOpenReq)){
+			if(this.state.replayer&&!(this.state.IDBOpenReq=!!this.state.IDBOpenReq)){
 				Replayer.IndexedDB.init();
-				Replayer.init.resetState.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
+				this.state.IDBOpenReq=Replayer.IndexedDB.isReqOpen;
 				Replayer.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,function(info){
 					if(!!info){
 						Replayer.duration.start=info.start;
@@ -377,38 +382,38 @@ Replayer={
 		},
 		curVideoID:'',
 		changing:false,
-		resetState:{},
+		state:{},
 		main:function(){
-			if(!Replayer.init.changing){
-				Replayer.init.changing=true;
+			if(!this.changing){
+				this.changing=true;
 				if(!yt.config_.VIDEO_ID)
-					Replayer.init.curVideoID=null;
+					this.curVideoID=null;
 				else{
-					if(Replayer.init.curVideoID!=yt.config_.VIDEO_ID){
-						!!Replayer.init.curVideoID&&Replayer.unload.main();
+					if(this.curVideoID!=yt.config_.VIDEO_ID){
+						!!this.curVideoID&&Replayer.unload.main();
 						Replayer.reset.main();
 					}
-					var isNeedReset=(!!yt.config_.VIDEO_ID&&Replayer.init.curVideoID!=yt.config_.VIDEO_ID);
-					for(var x in Replayer.init.resetState)
-						if(isNeedReset=(isNeedReset||!Replayer.init.resetState[x]))break;
+					var isNeedReset=(!!yt.config_.VIDEO_ID&&this.curVideoID!=yt.config_.VIDEO_ID);
+					for(var x in this.state)
+						if(isNeedReset=(isNeedReset||!this.state[x]))break;
 					if(isNeedReset){
 						Replayer.init.curVideoID=yt.config_.VIDEO_ID;
 //						try{
-							for(var x in Replayer.init)
-								Replayer.init[x].constructor==Function&&Replayer.init[x]();
+							for(var x in this)
+								this[x].constructor==Function&&this[x]();
 							var result=true;
-							for(var x in Replayer.init.resetState)
-								result&=Replayer.init.resetState[x];
+							for(var x in this.state)
+								result&=this.state[x];
 							if(result)
-								Replayer.init.resetState={};
+								this.state={};
 							else 
-								setTimeout(Replayer.init.main);
+								setTimeout(function(){Replayer.init.main()});
 //						}catch(e){
 //							console.log(e);
 //						}
 					}
 				}
-				Replayer.init.changing=false;
+				this.changing=false;
 			}
 		}
 	}
