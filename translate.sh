@@ -1,13 +1,9 @@
-MAIN_PROG=`sed -e "/\/\//d" < src/youtube.js |  tr -d "\t\r\n"`
+MAIN_PROG=`sed -e "/\/\//d" < src/youtube.js | tr -d "\t\r\n" | sed -e "s/ \?true/!0/g" | sed -e "s/ \?false/!1/g"`
 
 cat > youtube.js <<END_OF_FILE
-(function init(){
-	var script = document.createElement('script');
-	script.innerHTML = "${MAIN_PROG};if(!('\$' in window)){$=function(a){return document.querySelector(a)}};setTimeout(function(){Replayer.init.main()});document.body.addEventListener('load',function(){Replayer.init.main()},true)";
-	try{
-		document.querySelector('head').appendChild(script);
-	}catch(newE){
-		console.log('Error Occur when initializing Replayer: ', newE);
-	}
-})();
+{
+	let script = document.createElement('script');
+	script.innerHTML = "${MAIN_PROG};if(!('\$' in window)){$=function(a){return document.querySelector(a)}};Replayer.init.preInit();setTimeout(()=>Replayer.init.main());document.body.addEventListener('load',()=>Replayer.init.main(),true)";
+	document.head.appendChild(script);
+}
 END_OF_FILE
