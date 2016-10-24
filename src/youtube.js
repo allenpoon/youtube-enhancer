@@ -1,4 +1,4 @@
-Replayer={
+{
 	text:{
 		Loop:'|&#11118;|',
 		Crop:'|&#9205;|',
@@ -245,13 +245,14 @@ Replayer={
 	},
 	unload:{
 		SaveRecord:function(){
-			if(this.parent.duration.start!=null)
-				this.parent.IndexedDB.setInfo(
-					this.parent.init.curVideoID,
+			let p=this.parent;
+			if(p.duration.start!=null)
+				p.IndexedDB.setInfo(
+					p.init.curVideoID,
 					{
-						start:this.parent.duration.start,
-						end:this.parent.duration.end,
-						curMode:this.parent.curMode
+						start:p.duration.start,
+						end:p.duration.end,
+						curMode:p.curMode
 					},
 					null
 				)
@@ -287,8 +288,6 @@ Replayer={
 							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
 							+		' style=\"text-align:right;font-size:larger;font-weight:bold\"'
 							+	'>'
-							//+'</span>'
-							//+'<span>'
 							+	'<button'
 							+		' id=replayerA'
 							+		' title=\"'+t.TooltipFromButton+'\"'
@@ -297,16 +296,12 @@ Replayer={
 							+	'>'
 							+		t.ButtonFrom
 							+	'</button>'
-							//+'</span>'
-							//+'<span>'
 							+	'<button'
 							+		' class=\"yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
 							+		' style=\"font-size:larger;font-weight:bold\"'
 							+	'>'
 							+		'-'
 							+	'</button>'
-							//+'</span>'
-							//+'<span>'
 							+	'<button'
 							+		' id=replayerB'
 							+		' title=\"'+t.TooltipToButton+'\"'
@@ -315,8 +310,6 @@ Replayer={
 							+	'>'
 							+		t.ButtonTo
 							+	'</button>'
-							//+'</span>'
-							//+'<span>'
 							+	'<input'
 							+		' id=replayerTimerTo'
 							+		' size=6'
@@ -325,8 +318,6 @@ Replayer={
 							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
 							+		' style=\"text-align:left;font-size:larger;font-weight:bold\"'
 							+	'>'
-							//+'</span>'
-							//+'<span>'
 							+	'<button'
 							+		' id=replayToggle'
 							+		' title=\"'+t.TooltipStopToLoop+'\"'
@@ -382,32 +373,27 @@ Replayer={
 		},
 		LoadInfoAndRun:function(){
 			if(this.state.replayer&&!(this.state.IDBOpenReq=!!this.state.IDBOpenReq)){
-				this.parent.IndexedDB.init();
-				this.state.IDBOpenReq=this.parent.IndexedDB.isReqOpen;
-				this.parent.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,(info)=>{
+				let p=this.parent;
+				p.IndexedDB.init();
+				this.state.IDBOpenReq=p.IndexedDB.isReqOpen;
+				p.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,(info)=>{
 					if(!!info){
-						this.parent.duration.start=info.start;
-						this.parent.duration.end=info.end;
-						this.parent.curMode=info.curMode;
-						this.parent.showRepeatRange();
-						this.parent.toggle(info.curMode);
+						p.duration.start=info.start;
+						p.duration.end=info.end;
+						p.curMode=info.curMode;
+						p.showRepeatRange();
+						p.toggle(info.curMode);
 					}
 				});
 			}
 		},
-		curVideoID:'',
+//		curVideoID:'',
 //		changing:false,
-		state:{},
-		preInit:function(){
-// set parent
-			Replayer.reset.parent=
-			Replayer.unload.parent=
-			Replayer.IndexedDB.parent=
-			Replayer.init.parent=Replayer;
-		},
+//		state:{},
 		main:function(){
 			if(!this.changing){
 				this.changing=true;
+				this.state={};
 				if(!yt.config_.VIDEO_ID)
 					this.curVideoID=null;
 				else{
@@ -427,7 +413,7 @@ Replayer={
 							for(let x in this.state)
 								result&=this.state[x];
 							if(result)
-								this.state={};
+								delete this.state;
 							else 
 								setTimeout(()=>this.main());
 //						}catch(e){
@@ -438,5 +424,15 @@ Replayer={
 				this.changing=false;
 			}
 		}
+	},
+	start:function(){
+// set parent
+		this.reset.parent=
+		this.unload.parent=
+		this.IndexedDB.parent=
+		this.init.parent=this;
+		let f=()=>this.init.main();
+		setTimeout(f);
+		$('body').addEventListener('load',f,true)
 	}
 }
