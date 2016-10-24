@@ -1,17 +1,17 @@
 Replayer={
 	text:{
-		Loop:'Looping',
-		Crop:'Cropped',
-		Stop:'Stopped',
+		Loop:'|&#11118;|',
+		Crop:'|&#9205;|',
+		Stop:'&#9205;',
 		ButtonFrom:'A',
 		ButtonTo:'B',
 		PlaceHolderFrom:'From',
 		PlaceHolderTo:'To',
 		TooltipFromButton:'Set current position as start of repeat',
 		TooltipToButton:'Set current position as end of repeat',
-		TooltipLoopToCrop:'Change to Crop',
-		TooltipCropToStop:'Change to Stop',
-		TooltipStopToLoop:'Change to Loop',
+		TooltipLoopToCrop:'Looping; Click to Crop',
+		TooltipCropToStop:'Cropped; Click to Normal',
+		TooltipStopToLoop:'Normal; Click to Loop',
 		TooltipFormat:'[ [ [ h: ] m: ] s. ] ms',
 		TooltipFrom:'Start',
 		TooltipTo:'End'
@@ -277,70 +277,85 @@ Replayer={
 		ReplayerLayout:function(){
 			let e=$('#watch8-secondary-actions');
 			if(!(this.state.replayer=!!this.state.replayer)&&!!e){
-				let span,input,format=this.parent.text.TooltipFormat;
+				let p=this.parent,t=p.text,f=t.TooltipFormat;
+				e.innerHTML='<span>'
+							+	'<input'
+							+		' id=replayerTimerFrom'
+							+		' size=6'
+							+		' placeholder=\"'+t.PlaceHolderFrom+'\"'
+							+		' title=\"'+t.TooltipFrom+' - '+f+'\"'
+							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
+							+		' style=\"text-align:right;font-size:larger;font-weight:bold\"'
+							+	'>'
+							//+'</span>'
+							//+'<span>'
+							+	'<button'
+							+		' id=replayerA'
+							+		' title=\"'+t.TooltipFromButton+'\"'
+							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
+							+		' style=\"text-align:center;font-size:larger;font-weight:bold\"'
+							+	'>'
+							+		t.ButtonFrom
+							+	'</button>'
+							//+'</span>'
+							//+'<span>'
+							+	'<button'
+							+		' class=\"yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
+							+		' style=\"font-size:larger;font-weight:bold\"'
+							+	'>'
+							+		'-'
+							+	'</button>'
+							//+'</span>'
+							//+'<span>'
+							+	'<button'
+							+		' id=replayerB'
+							+		' title=\"'+t.TooltipToButton+'\"'
+							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
+							+		' style=\"text-align:center;font-size:larger;font-weight:bold\"'
+							+	'>'
+							+		t.ButtonTo
+							+	'</button>'
+							//+'</span>'
+							//+'<span>'
+							+	'<input'
+							+		' id=replayerTimerTo'
+							+		' size=6'
+							+		' placeholder=\"'+t.PlaceHolderTo+'\"'
+							+		' title=\"'+t.TooltipTo+' - '+f+'\"'
+							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
+							+		' style=\"text-align:left;font-size:larger;font-weight:bold\"'
+							+	'>'
+							//+'</span>'
+							//+'<span>'
+							+	'<button'
+							+		' id=replayToggle'
+							+		' title=\"'+t.TooltipStopToLoop+'\"'
+							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
+							+		' style=\"text-align:center;font-size:large;font-weight:bold;width:50px\"'
+							+	'>'
+							+		t.Stop
+							+	'</button>'
+							+'</span>'
+							+e.innerHTML;
 
-				span=document.createElement('span');
-				input=document.createElement('input');
-				input.placeholder=this.parent.text.PlaceHolderFrom;
-				input.size=8;
-				input.title=this.parent.text.TooltipFrom+' - '+format;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
-				input.style.textAlign='center';
-				input.id='replayerTimerFrom';
-				input.addEventListener('keyup',()=>{if(window.event.keyCode==13){this.parent.toggle(this.parent.curMode!=this.parent.mode.stop?this.parent.curMode:this.parent.mode.crop);}},false);
-				span.appendChild(input);
-				e.appendChild(span);
+				$('#watch8-secondary-actions #replayerTimerFrom').addEventListener('keyup',()=>
+						window.event.keyCode==13
+						&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop)
+					,false);
 
-				span=document.createElement('span');
-				input=document.createElement('button');
-				input.id='replayerA';
-				input.title=this.parent.text.TooltipFromButton;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
-				input.addEventListener('click',()=>this.parent.setA(),false);
-				input.textContent=this.parent.text.ButtonFrom;
-				span.appendChild(input);
-				e.appendChild(span);
+				$('#watch8-secondary-actions #replayerTimerTo').addEventListener('keyup',()=>
+						window.event.keyCode==13
+						&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop)
+				,false);
 
-				span=document.createElement('span');
-				input=document.createElement('button');
-				input.id='replayerB';
-				input.title=this.parent.text.TooltipToButton;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
-				input.addEventListener('click',()=>this.parent.setB(),false);
-				input.textContent=this.parent.text.ButtonTo;
-				span.appendChild(input);
-				e.appendChild(span);
+				$('#watch8-secondary-actions #replayerA').addEventListener('click',()=>p.setA(),false);
 
-				span=document.createElement('span');
-				input=document.createElement('input');
-				input.placeholder=this.parent.text.PlaceHolderTo;
-				input.size=8;
-				input.title=this.parent.text.TooltipTo+' - '+format;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
-				input.style.textAlign='center';
-				input.id='replayerTimerTo';
-				input.addEventListener('keyup',()=>{if(window.event.keyCode==13){this.parent.toggle(this.parent.curMode!=this.parent.mode.stop?this.parent.curMode:this.parent.mode.crop);}},false);
-				span.appendChild(input);
-				e.appendChild(span);
+				$('#watch8-secondary-actions #replayerB').addEventListener('click',()=>p.setB(),false);
 
-				span=document.createElement('span');
-				input=document.createElement('button');
-				input.id='replayToggle';
-				input.title=this.parent.text.TooltipStopToLoop;
-				input.className='yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity';
-				input.addEventListener('click',()=>this.parent.toggle(),false);
-				input.textContent=this.parent.text.Stop;
-				span.appendChild(input);
-				e.appendChild(span);
-			}
+				$('#watch8-secondary-actions #replayToggle').addEventListener('click',()=>p.toggle(),false);
 
-			if(	!!$('#watch8-secondary-actions #replayerTimerFrom')
-			&&	!!$('#watch8-secondary-actions #replayerA')
-			&&	!!$('#watch8-secondary-actions #replayerB')
-			&&	!!$('#watch8-secondary-actions #replayerTimerTo')
-			&&	!!$('#watch8-secondary-actions #replayToggle')
-			)
 				this.state.replayer=true;
+			}
 		},
 		ChangeYouTubeLayout:function(){
 			if(this.state.replayer)
