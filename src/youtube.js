@@ -1,18 +1,18 @@
 {
 	text:{
-		Loop:'|&#11118;|',
-		Crop:'|&#9205;|',
-		Stop:'&#9205;',
+		Loop:'├⭮┤',
+		Crop:'├⏵┤',
+		Stop:'⏵',
 		ButtonFrom:'A',
 		ButtonTo:'B',
 		PlaceHolderFrom:'From',
 		PlaceHolderTo:'To',
-		TooltipFromButton:'Set current position as start of repeat',
-		TooltipToButton:'Set current position as end of repeat',
+		TooltipFromButton:'Set now as the start',
+		TooltipToButton:'Set now as the end',
 		TooltipLoopToCrop:'Looping; Click to Crop',
 		TooltipCropToStop:'Cropped; Click to Normal',
 		TooltipStopToLoop:'Normal; Click to Loop',
-		TooltipFormat:'[ [ [ h: ] m: ] s. ] ms',
+		TooltipFormat:'[ [ [ [ h: ] m: ] s. ] ms ]',
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
@@ -322,7 +322,7 @@
 							+		' id=replayToggle'
 							+		' title=\"'+t.TooltipStopToLoop+'\"'
 							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"text-align:center;font-size:large;font-weight:bold;width:50px\"'
+							+		' style=\"text-align:center;font-size:large;font-weight:bold;width:65px\"'
 							+	'>'
 							+		t.Stop
 							+	'</button>'
