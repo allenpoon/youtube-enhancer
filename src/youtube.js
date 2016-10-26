@@ -16,6 +16,15 @@
 		TooltipFrom:'Start',
 		TooltipTo:'End'
 	},
+	ui:{
+//		fromRange: <DOMInputElement>,
+//		toRange: <DOMInputElement>,
+//		aButton: <DOMButtonElement>,
+//		bButton: <DOMButtonElement>,
+//		actionButton: <DOMButtonElement>,
+	},
+//	player: <DOMDivElement with player control prototype>,
+//	video: <DOMVideoElement>
 	mode:{
 		stop:1,
 		loop:2,
@@ -26,7 +35,6 @@
 //	add \\ before \ because of string
 	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,
 
-//	player:null,
 //	timer:null,
 	duration:{
 //		start:null,
@@ -65,8 +73,8 @@
 //		s == start
 //		e == end
 		let s,e;
-		s=this.getSecond($('#replayerTimerFrom'));
-		e=this.getSecond($('#replayerTimerTo'));
+		s=this.getSecond(this.ui.fromRange);
+		e=this.getSecond(this.ui.toRange);
 		
 		if(e<=0||e>(this.player.getDuration()+1)*1000)
 			e=Math.floor(this.player.getDuration()*1000);
@@ -101,47 +109,46 @@
 		this.toggle(this.curMode);
 	},
 	showRepeatRange:function(){
-		$('#replayerTimerFrom').value=this.msToStr(this.duration.start);
-		$('#replayerTimerTo').value=this.msToStr(this.duration.end);
+		this.ui.fromRange.value=this.msToStr(this.duration.start);
+		this.ui.toRange.value=this.msToStr(this.duration.end);
 	},
 	rmTimer:function(){
 		clearTimeout(this.timer);
 		this.timer=null;
 	},
 	toggle:function(mode){
-		if(!this.player||Object.keys(this.init.state).length!=0)
-			setTimeout(()=>this.toggle(mode),100);
-		else if(this.player.getAdState()>0){
-			$('video').addEventListener('durationchange',()=>{
-				let e=$('video');
-				if(!isNaN(e.duration)){
-					e.removeEventListener('durationchange',arguments.callee);
+		let v=this.video;
+		if(this.player.getAdState()>0){
+			let f;
+			v.addEventListener('durationchange',f=()=>{
+				if(!isNaN(v.duration)){
+					v.removeEventListener('durationchange',f);
 					this.toggle(mode);
 				}
 			});
-			setTimeout(()=>this.toggle(mode),(this.player.getDuration()-this.player.getCurrentTime())*1000);
+			// setTimeout(()=>this.toggle(mode),(this.player.getDuration()-this.player.getCurrentTime())*1000);
 		}else{
-			let e=$('#replayToggle');
+			let e=this.ui.actionButton;
 			if(mode==this.mode.loop||!mode&&this.curMode==this.mode.stop){
 				this.curMode=this.mode.loop;
 				this.setRange()&&this.showRepeatRange();
 				this.setLoop();
 				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipLoopToCrop;
-				$('video').loop=true;
+				v.loop=true;
 			}else if(mode==this.mode.crop||!mode&&this.curMode==this.mode.loop){
 				this.curMode=this.mode.crop;
 				this.setRange()&&this.showRepeatRange();
 				this.setCrop();
 				e.innerHTML=this.text.Crop;
 				e.title=e.dataset.tooltipText=this.text.TooltipCropToStop;
-				$('video').loop=false;
+				v.loop=false;
 			}else{
 				this.curMode=this.mode.stop;
 				this.rmTimer();
 				e.innerHTML=this.text.Stop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStopToLoop;
-				$('video').loop=false;
+				v.loop=false;
 			}
 		}
 	},
@@ -155,20 +162,21 @@
 		return Number(v);
 	},
 
-//	e == DOMInputElement
+//	e:DOMInputElement
+//  c:int == count
+//  t:array(string) == time list
 	getSecond:function(e){
-		var t=e.value.match(this.format);
-		var count=4;
+		let t=e.value.match(this.format),c=4;
 		switch(''){
-			case t[1]:count--;
-			case t[2]:count--;
-			case t[3]:count--;
-			case t[4]:count--;
+			case t[1]:c--;
+			case t[2]:c--;
+			case t[3]:c--;
+			case t[4]:c--;
 		}
-		return!!count?(this.toSecond(t[1],count)+this.toSecond(t[2],count-1)+this.toSecond(t[3],count-2)+this.toSecond(t[4],count-3)):0;
+		return!!c?(this.toSecond(t[1],c)+this.toSecond(t[2],c-1)+this.toSecond(t[3],c-2)+this.toSecond(t[4],c-3)):0;
 	},
-// var str = [<ms>, <s>, <m>, <h>]
 	msToStr:function(t){
+		// s = [<ms>, <s>, <m>, <h>]
 		let s=[t%1000,(Math.floor(t/1000))%60,(Math.floor(t/(60*1000)))%60,(Math.floor(t/(60*60*1000)))];
 		return(s[3]>9?(s[3]+':'):s[3]>0?('0'+s[3]+':'):'')
 					+(s[2]>9?(s[2]+':'):s[2]>0?('0'+s[2]+':'):s[3]>0?'00:':'')
@@ -193,7 +201,7 @@
 				};
 				this.dbreq.onerror=(e)=>0;
 				this.dbreq.onupgradeneeded=(evt)=>{
-					var db=evt.target.result;
+					let db=evt.target.result;
 					if(!db.objectStoreNames.contains('replayRange'))
 						db.createObjectStore('replayRange',{keyPath:'videoID'});
 				};
@@ -209,7 +217,7 @@
 		getInfoByVideoID:function(vid,cb){
 			this.waitingFunctionList.push(()=>{
 				this.db.transaction(['replayRange']).objectStore('replayRange').get(vid).onsuccess=(evt)=>{
-// for Database upgrade
+					// for Database upgrade
 					let r=evt.target.result;
 					!!r&&!r.curMode&&(r.curMode=!!r.autoPlay?this.parent.mode.loop:this.parent.mode.stop)&&delete r.autoPlay;
 					!!cb&&cb.constructor==Function&&cb(r);
@@ -229,20 +237,6 @@
 			!this.isReqOpen&&this.openDB();
 		}
 	},
-	reset:{
-		ReplayerTimer:function(){this.parent.rmTimer()},
-		Duration:function(){this.parent.duration={start:null,end:null}},
-		Player:function(){this.parent.player=$('#movie_player');$('video').loop=false;},
-//		changing:false,
-		main:function(){
-			if(!this.changing){
-				this.changing=true;
-				for(var x in this)
-					this[x].constructor==Function&&this[x]();
-				this.changing=false;
-			}
-		}
-	},
 	unload:{
 		SaveRecord:function(){
 			let p=this.parent;
@@ -257,126 +251,135 @@
 					null
 				)
 		},
+		RemoveUIRef:function(){
+			let p=this.parent;
+			delete p.ui;
+			p.ui={};
+		},
 //		changing:false,
 		main:function(){
 			if(!this.changing){
 				this.changing=true;
-				for(var x in this)
+				for(let x in this)
 					this[x].constructor==Function&&this[x]();
 				this.changing=false;
 			}
 		}
 	},
 	init:{
-		SetUnloadHandler:function(){
-			if(!this.unloadHandler){
-				window.addEventListener('beforeunload', ()=>this.parent.unload.main());
-				this.unloadHandler=true;
+		RemoveTimer:function(){
+			if(!this.state.removeTimer){
+				this.parent.rmTimer();
+				this.state.removeTimer=true;
 			}
-			this.state.unloadHandler=!!this.unloadHandler;
 		},
-		ReplayerLayout:function(){
+		UpdateDuration:function(){
+			if(!this.state.resetDuration){
+				this.parent.duration={start:null,end:null};
+				this.state.resetDuration=true;
+			}
+		},
+		StopLoop:function(){
+			if(!(this.state.setLoop=!!this.state.setLoop)){
+				this.parent.video.loop=false;
+				this.state.setLoop=true;
+			}
+		},
+		SetLayout:function(){
 			let e=$('#watch8-secondary-actions');
 			if(!(this.state.replayer=!!this.state.replayer)&&!!e){
-				let p=this.parent,t=p.text,f=t.TooltipFormat;
-				e.innerHTML='<span>'
-							+	'<input'
-							+		' id=replayerTimerFrom'
-							+		' size=6'
-							+		' placeholder=\"'+t.PlaceHolderFrom+'\"'
-							+		' title=\"'+t.TooltipFrom+' - '+f+'\"'
-							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"text-align:right;font-size:larger;font-weight:bold\"'
-							+	'>'
-							+	'<button'
-							+		' id=replayerA'
-							+		' title=\"'+t.TooltipFromButton+'\"'
-							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"text-align:center;font-size:larger;font-weight:bold\"'
-							+	'>'
-							+		t.ButtonFrom
-							+	'</button>'
-							+	'<button'
-							+		' class=\"yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"font-size:larger;font-weight:bold\"'
-							+	'>'
-							+		'-'
-							+	'</button>'
-							+	'<button'
-							+		' id=replayerB'
-							+		' title=\"'+t.TooltipToButton+'\"'
-							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"text-align:center;font-size:larger;font-weight:bold\"'
-							+	'>'
-							+		t.ButtonTo
-							+	'</button>'
-							+	'<input'
-							+		' id=replayerTimerTo'
-							+		' size=6'
-							+		' placeholder=\"'+t.PlaceHolderTo+'\"'
-							+		' title=\"'+t.TooltipTo+' - '+f+'\"'
-							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"text-align:left;font-size:larger;font-weight:bold\"'
-							+	'>'
-							+	'<button'
-							+		' id=replayToggle'
-							+		' title=\"'+t.TooltipStopToLoop+'\"'
-							+		' class=\"yt-uix-tooltip yt-uix-button yt-uix-button-text yt-uix-button-opacity\"'
-							+		' style=\"text-align:center;font-size:large;font-weight:bold;width:65px\"'
-							+	'>'
-							+		t.Stop
-							+	'</button>'
-							+'</span>'
-							+e.innerHTML;
+				let p=this.parent,t=p.text,f=t.TooltipFormat,nE=document.createElement('div'),nEc=nE.children;
+				nE.classList.add('yt-uix-menu','yt-uix-button-opacity','yt-uix-button-text');
+				nE.style.border='2px solid grey';
+				nE.style.borderRadius='10px';
+							// From (Time Range): index == 0
+				nE.innerHTML='<input'
+							+	' size=6'
+							+	' placeholder=\"'+t.PlaceHolderFrom+'\"'
+							+	' title=\"'+t.TooltipFrom+' - '+f+'\"'
+							+	' class=\"yt-uix-tooltip yt-uix-button\"'
+							+	' style=\"text-align:right;font-size:larger;font-weight:bold\"'
+							+'>'
+							// From (Button): index == 1
+							+'<button'
+							+	' title=\"'+t.TooltipFromButton+'\"'
+							+	' class=\"yt-uix-tooltip yt-uix-button\"'
+							+	' style=\"text-align:center;font-size:larger;font-weight:bold\"'
+							+'>'
+							+	t.ButtonFrom
+							+'</button>'
+							+'<button'
+							+	' class=\"yt-uix-button\"'
+							+	' style=\"font-size:larger;font-weight:bold\"'
+							+'>'
+							+	'-'
+							+'</button>'
+							// To (Button): index == 3
+							+'<button'
+							+	' title=\"'+t.TooltipToButton+'\"'
+							+	' class=\"yt-uix-tooltip yt-uix-button\"'
+							+	' style=\"text-align:center;font-size:larger;font-weight:bold\"'
+							+'>'
+							+	t.ButtonTo
+							+'</button>'
+							// To (Time Range): index == 4
+							+'<input'
+							+	' size=6'
+							+	' placeholder=\"'+t.PlaceHolderTo+'\"'
+							+	' title=\"'+t.TooltipTo+' - '+f+'\"'
+							+	' class=\"yt-uix-tooltip yt-uix-button\"'
+							+	' style=\"text-align:left;font-size:larger;font-weight:bold\"'
+							+'>'
+							// Replayer Action (Button): index == 5
+							+'<button'
+							+	' title=\"'+t.TooltipStopToLoop+'\"'
+							+	' class=\"yt-uix-tooltip yt-uix-button\"'
+							+	' style=\"text-align:center;font-size:large;font-weight:bold;width:65px\"'
+							+'>'
+							+	t.Stop
+							+'</button>';
+				e.insertBefore(nE,e.lastChild);
 
-				$('#watch8-secondary-actions #replayerTimerFrom').addEventListener('keyup',()=>
-						window.event.keyCode==13
+				let ui=this.parent.ui;
+				(ui.fromRange=nEc[0]).addEventListener('keyup',(evt)=>
+						evt.keyCode==13
 						&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop)
 					,false);
 
-				$('#watch8-secondary-actions #replayerTimerTo').addEventListener('keyup',()=>
-						window.event.keyCode==13
+				(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
+
+				(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
+
+				(ui.toRange=nEc[4]).addEventListener('keyup',(evt)=>
+						evt.keyCode==13
 						&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop)
 				,false);
 
-				$('#watch8-secondary-actions #replayerA').addEventListener('click',()=>p.setA(),false);
-
-				$('#watch8-secondary-actions #replayerB').addEventListener('click',()=>p.setB(),false);
-
-				$('#watch8-secondary-actions #replayToggle').addEventListener('click',()=>p.toggle(),false);
+				(ui.actionButton=nEc[5]).addEventListener('click',()=>p.toggle(),false);
 
 				this.state.replayer=true;
 			}
 		},
 		ChangeYouTubeLayout:function(){
-			if(this.state.replayer)
-				if(!(this.state.likeDislike=!!this.state.likeDislike)){
-					let e,eL;
-					e=$('#watch-like-dislike-buttons');
-					eL=!!e&&e.querySelectorAll('.yt-uix-button-content')||[];
-					for(let i=0;i<eL.length;i++)
-						this.state.likeDislike=!!eL[i]&&!!eL[i].parentNode.removeChild(eL[i]);
-					eL=!!e&&e.querySelectorAll('button')||[];
-					for(let i=0;i<eL.length;i++)
-						if(!!eL[i]){
-							eL[i].style.padding='0 5px';
-							eL[i].querySelector('span').style.margin='0';
-							eL[i].querySelector('.yt-uix-button-icon').style.margin='0';
-						}
-					this.state.likeDislike=true;
-				}
+			// remove like number
+			let e=$('.like-button-renderer');
+			if(!!e&&!(this.state.likeDislike=!!this.state.likeDislike)){
+				let eC=e.children;
+				eC[0].children[0].removeChild(eC[0].children[0].children[0]);
+				eC[2].children[0].removeChild(eC[2].children[0].children[0]);
+				this.state.likeDislike=true;
+			}
 		},
 		ChangeQuanlity:function(){
-			if(!this.state.playerQuality)
+			if(!(this.state.playerQuality=(this.parent.player&&this.parent.player.getPlaybackQuality()==this.parent.player.getAvailableQualityLevels()[0])))
 				this.parent.player.setPlaybackQuality(this.parent.player.getAvailableQualityLevels()[0]);
-			this.state.playerQuality=(this.parent.player.getPlaybackQuality()==this.parent.player.getAvailableQualityLevels()[0]);
 		},
 		LoadInfoAndRun:function(){
-			if(this.state.replayer&&!(this.state.IDBOpenReq=!!this.state.IDBOpenReq)){
+			if(!(this.state.IDBOpenReq=!!this.state.IDBOpenReq)&&this.state.replayer){
 				let p=this.parent;
 				p.IndexedDB.init();
 				this.state.IDBOpenReq=p.IndexedDB.isReqOpen;
-				p.IndexedDB.getInfoByVideoID(yt.config_.VIDEO_ID,(info)=>{
+				p.IndexedDB.getInfoByVideoID(this.curVideoID,(info)=>{
 					if(!!info){
 						p.duration.start=info.start;
 						p.duration.end=info.end;
@@ -392,47 +395,57 @@
 //		state:{},
 		main:function(){
 			if(!this.changing){
-				this.changing=true;
-				this.state={};
-				if(!yt.config_.VIDEO_ID)
-					this.curVideoID=null;
-				else{
-					let isNeedReset;
-					if(isNeedReset=(this.curVideoID!=yt.config_.VIDEO_ID)){
-						!!this.curVideoID&&this.parent.unload.main();
-						this.parent.reset.main();
-					}
-					for(let x in this.state)
-						if(isNeedReset=(isNeedReset||!this.state[x]))break;
-					if(isNeedReset){
-						this.curVideoID=yt.config_.VIDEO_ID;
-//						try{
-							for(let x in this)
-								this[x].constructor==Function&&this[x]();
-							let result=true;
-							for(let x in this.state)
-								result&=this.state[x];
-							if(result)
-								delete this.state;
-							else 
-								setTimeout(()=>this.main());
-//						}catch(e){
-//							console.log(e);
-//						}
+				let newVideoID=this.parent.player.getVideoStats().docid;
+				if(newVideoID){
+					if(this.state){
+						let result=true;
+
+						this.state=this.state||{};
+						this.curVideoID=newVideoID;
+
+						this.changing=true;
+						for(let x in this)
+							this[x].constructor==Function&&this[x]();
+						this.changing=false;
+
+						for(let x in this.state)
+							if(!this.state[x]){
+								result=false;
+								break;
+							}
+
+						if(result)
+							delete this.state;
+						else 
+							setTimeout(()=>this.main());
+					}else if(this.curVideoID!=newVideoID){
+						// this.state should be null
+						this.state={};
+						if(this.curVideoID)
+							this.parent.unload.main();
+						this.main();
 					}
 				}
-				this.changing=false;
 			}
 		}
 	},
 	start:function(){
-// set parent
-		this.reset.parent=
+		// set parent
 		this.unload.parent=
 		this.IndexedDB.parent=
 		this.init.parent=this;
-		let f=()=>this.init.main();
-		setTimeout(f);
-		$('body').addEventListener('load',f,true)
+
+		let f=()=>{
+			this.player=$('#movie_player');
+			this.video=$('video');
+			if(this.player&&this.video){
+				this.video.addEventListener('durationchange',()=>this.init.main());
+				this.init.main();
+			}else{
+				setTimeout(f);
+			}
+		};
+		f();
+		window.addEventListener('beforeunload',()=>this.unload.main());
 	}
 }
