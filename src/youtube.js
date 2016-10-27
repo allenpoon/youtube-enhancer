@@ -287,7 +287,7 @@
 		},
 		SetLayout:function(){
 			let e=$('#watch8-secondary-actions');
-			if(!(this.state.replayer=!!this.state.replayer)&&!!e){
+			if(!(this.state.replayer=!!this.state.replayer)&&!!e&&this.state.menuList){
 				let p=this.parent,t=p.text,f=t.TooltipFormat,nE=document.createElement('div'),nEc=nE.children;
 				nE.classList.add('yt-uix-menu','yt-uix-button-opacity','yt-uix-button-text');
 				nE.style.border='2px solid grey';
@@ -362,12 +362,25 @@
 		},
 		ChangeYouTubeLayout:function(){
 			// remove like number
-			let e=$('.like-button-renderer');
-			if(!!e&&!(this.state.likeDislike=!!this.state.likeDislike)){
-				let eC=e.children;
-				eC[0].children[0].removeChild(eC[0].children[0].children[0]);
-				eC[2].children[0].removeChild(eC[2].children[0].children[0]);
-				this.state.likeDislike=true;
+			//let e=$('.like-button-renderer'),eMenu;
+			//if(e&&!(this.state.likeDislike=!!this.state.likeDislike)){
+			//	let eC=e.children;
+			//	eC[0].children[0].removeChild(eC[0].children[0].children[0]);
+			//	eC[2].children[0].removeChild(eC[2].children[0].children[0]);
+			//	this.state.likeDislike=true;
+			//}
+
+			// move share button to more
+			// execute too much time before interface ready
+			e=$('#watch8-secondary-actions');
+			eMenu=e&&e.querySelector('ul');
+			if(!(this.state.menuList=!!this.state.menuList)&&e&&eMenu){
+				let eC=e.children,eLi;
+				eC[1].classList.remove('yt-uix-button','yt-uix-button-opacity','yt-uix-button-has-icon','no-icon-markup','yt-uix-tooltip');
+				eC[1].classList.add('has-icon','yt-ui-menu-item','yt-uix-menu-close-on-select');
+				(eLi=document.createElement('li')).appendChild(eC[1]);
+				eMenu.insertBefore(eLi,eMenu.children[0]);
+				this.state.menuList=true;
 			}
 		},
 		ChangeQuanlity:function(){
