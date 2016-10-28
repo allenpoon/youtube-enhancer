@@ -25,6 +25,7 @@
 	},
 //	player: <DOMDivElement with player control prototype>,
 //	video: <DOMVideoElement>
+//	videoID:'',
 	mode:{
 		stop:1,
 		loop:2,
@@ -257,11 +258,11 @@
 		}
 	},
 	unload:{
-		SaveRecord:function(){
+		SaveRecordAndRemoveTimer:function(){
 			let p=this.parent;
-			if(p.duration.start!=null){
+			if(p.videoID){
 				p.IndexedDB.setInfo(
-					p.init.curVideoID,
+					p.videoID,
 					{
 						start:p.duration.start,
 						end:p.duration.end,
@@ -269,7 +270,9 @@
 					},
 					null
 				);
+				p.videoID=null;
 			}
+			p.setStop();
 		},
 		RemoveUIRef:function(){
 			delete this.parent.ui;
@@ -287,12 +290,6 @@
 		}
 	},
 	init:{
-		RemoveTimer:function(){
-			if(!this.state.removeTimer){
-				this.parent.setStop();
-				this.state.removeTimer=true;
-			}
-		},
 		UpdateDuration:function(){
 			if(!this.state.resetDuration){
 				this.parent.duration={start:null,end:null};
@@ -411,7 +408,7 @@
 				let p=this.parent;
 				p.IndexedDB.init();
 				this.state.IDBOpenReq=p.IndexedDB.isReqOpen;
-				p.IndexedDB.getInfoByVideoID(this.curVideoID,(info)=>{
+				p.IndexedDB.getInfoByVideoID(this.state.curVideoID,(info)=>{
 					if(info){
 						p.duration.start=info.start;
 						p.duration.end=info.end;
@@ -422,26 +419,26 @@
 				});
 			}
 		},
-//		curVideoID:'',
 //		changing:false,
 //		state:{},
 		main:function(){
-			if(!this.changing){
-				let newVideoID=this.parent.player.getVideoData().video_id;
+			let p=this.parent;
+			if(!this.changing&&p.isVideoChanged()){
+				let newVideoID=p.player.getVideoData().video_id;
 				if(newVideoID){
-					if(this.curVideoID!=newVideoID){
+					if(p.isVideoChanged()&&!this.state){
+						if(p.videoID){
+							p.unload.main();
+						}
 						if(!$('#watch8-secondary-actions>button')){
 							setTimeout(()=>this.main());
 						}else{
 							// this.state should be null
 							this.state={};
-							if(this.curVideoID){
-								this.parent.unload.main();
-							}
-							this.curVideoID=newVideoID;
+							this.state.curVideoID=newVideoID;
 							this.main();
 						}
-					}else if(this.state){
+					}else{
 						let result=true;
 
 						this.changing=true;
@@ -458,6 +455,8 @@
 						}
 
 						if(result){
+							// allow event trigger
+							p.videoID=newVideoID;
 							delete this.state;
 						}else{
 							setTimeout(()=>this.main());
@@ -467,19 +466,24 @@
 			}
 		}
 	},
+	isVideoChanged:function(){
+		return this.videoID!=this.player.getVideoData().video_id;
+	},
 	start:function(){
 		// set parent
 		this.IndexedDB.parent=
 		this.unload.parent=
 		this.init.parent=this;
 
-		let evt='addEventListener';
-		let f=()=>{
-			let p=this.player=$('#movie_player');
-			let v=this.video=p&&p.querySelector('video');
+		let evt='addEventListener'
+		,	f=()=>{
+
+			let p=this.player=$('#movie_player')
+			,	v=this.video=p&&p.querySelector('video');
+
 			if(p&&v){
 				// add all event handle
-				let reloadTimer=()=>this.toggle(this.curMode);
+				let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
 				let stopTimer=()=>this.rmTimer();
 				v[evt]('play',reloadTimer);
 				v[evt]('seeked',reloadTimer);
