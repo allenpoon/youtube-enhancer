@@ -1,8 +1,8 @@
 {
-	"name":"YT Replayer & HDer",
-	"version":"10.4",
+	"name":"YouTube Enhancer",
+	"version":"11.0",
 	"manifest_version":2,
-	"description":"Replay The Video and Auto HD",
+	"description":"Enhance user experience in YouTube",
 	"content_scripts":[
 		{
 			"run_at": "document_end",

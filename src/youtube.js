@@ -41,34 +41,42 @@
 //		end:null
 	},
 	setStop:function(){
+		this.video.loop=false;
 		this.rmTimer();
 	},
 	setLoop:function(){
-		this.rmTimer();
-		if(	this.player.getPlayerState()!==1
-		||	this.duration.end<=this.player.getCurrentTime()*1000
-		||	this.player.getCurrentTime()*1000<this.duration.start
+		let p=this.player;
+		if(	this.duration.end<=p.getCurrentTime()*1000
+		||	p.getCurrentTime()*1000<=this.duration.start
 		){
-			if(this.player.getPlayerState()===2){
-				this.player.playVideo();
-			}
-			this.player.seekTo(this.duration.start/1000,true);
+			p.seekTo(this.duration.start/1000,true);
 		}
-		this.setTimer(()=>this.setLoop());
+		this.video.loop=true;
+		if(p.getPlayerState()===1
+		||	p.getPlayerState()===3
+		){
+			this.setTimer(()=>this.setLoop());
+		}
 	},
 	setCrop:function(){
-		this.rmTimer();
-		if(this.duration.end<=this.player.getCurrentTime()*1000){
-			this.player.seekTo(this.player.getDuration(),true);
-		}else{
-			if(this.player.getCurrentTime()*1000<this.duration.start){
-				this.player.seekTo(this.duration.start/1000,true);
-			}
+		let p=this.player;
+		if(this.duration.end<=p.getCurrentTime()*1000
+		&&	p.getPlayerState()===1
+		){
+			p.seekTo(p.getDuration(),true);
+		}else if(p.getCurrentTime()*1000<this.duration.start){
+			p.seekTo(this.duration.start/1000,true);
+		}
+		this.video.loop=false;
+		if(p.getPlayerState()===1
+		||	p.getPlayerState()===3
+		){
 			this.setTimer(()=>this.setCrop());
 		}
 	},
 	setTimer:function(f){
-		this.timer=setTimeout(f,this.duration.end-this.player.getCurrentTime()*1000);
+		this.rmTimer();
+		this.timer=setTimeout(f,(this.duration.end-this.player.getCurrentTime()*1000)/this.player.getPlaybackRate());
 	},
 //	Return change of time range
 	setRange:function(){
@@ -101,7 +109,9 @@
 	},
 	setA:function(){
 		this.duration.start=Math.floor(this.player.getCurrentTime()*1000);
-		if(!this.duration.end||this.duration.start>this.duration.end){
+		if(!this.duration.end
+		||	this.duration.start>this.duration.end
+		){
 			this.duration.end=Math.floor(this.player.getDuration()*1000);
 		}
 		this.showRepeatRange();
@@ -109,7 +119,10 @@
 	},
 	setB:function(){
 		this.duration.end=Math.floor(this.player.getCurrentTime()*1000);
-		if(!this.duration.start||this.duration.start>this.duration.end||this.duration.start<0){
+		if(!this.duration.start
+		||	this.duration.start>this.duration.end
+		||	this.duration.start<0
+		){
 			this.duration.start=0;
 		}
 		this.showRepeatRange();
@@ -124,17 +137,17 @@
 		this.timer=null;
 	},
 	toggle:function(mode){
-		let v=this.video;
-		if(this.player.getAdState()>0){
-			let f;
-			v.addEventListener('durationchange',f=()=>{
-				if(!isNaN(v.duration)){
-					v.removeEventListener('durationchange',f);
-					this.toggle(mode);
-				}
-			});
-			// setTimeout(()=>this.toggle(mode),(this.player.getDuration()-this.player.getCurrentTime())*1000);
-		}else{
+//		let v=this.video;
+//		if(this.player.getAdState()>0){
+//			let f;
+//			v.addEventListener('durationchange',f=()=>{
+//				if(!isNaN(v.duration)){
+//					v.removeEventListener('durationchange',f);
+//					this.toggle(mode);
+//				}
+//			});
+//			// setTimeout(()=>this.toggle(mode),(this.player.getDuration()-this.player.getCurrentTime())*1000);
+//		}else{
 			let e=this.ui.actionButton;
 			if(mode==this.mode.loop||!mode&&this.curMode==this.mode.stop){
 				this.curMode=this.mode.loop;
@@ -142,22 +155,19 @@
 				this.setLoop();
 				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipLoopToCrop;
-				v.loop=true;
 			}else if(mode==this.mode.crop||!mode&&this.curMode==this.mode.loop){
 				this.curMode=this.mode.crop;
 				this.setRange()&&this.showRepeatRange();
 				this.setCrop();
 				e.innerHTML=this.text.Crop;
 				e.title=e.dataset.tooltipText=this.text.TooltipCropToStop;
-				v.loop=false;
 			}else{
 				this.curMode=this.mode.stop;
-				this.rmTimer();
+				this.setStop();
 				e.innerHTML=this.text.Stop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStopToLoop;
-				v.loop=false;
 			}
-		}
+//		}
 	},
 	toSecond:function(v,l){
 		if(v.constructor==String&&l==1){
@@ -262,9 +272,8 @@
 			}
 		},
 		RemoveUIRef:function(){
-			let p=this.parent;
-			delete p.ui;
-			p.ui={};
+			delete this.parent.ui;
+			this.parent.ui={};
 		},
 //		changing:false,
 		main:function(){
@@ -280,7 +289,7 @@
 	init:{
 		RemoveTimer:function(){
 			if(!this.state.removeTimer){
-				this.parent.rmTimer();
+				this.parent.setStop();
 				this.state.removeTimer=true;
 			}
 		},
@@ -288,12 +297,6 @@
 			if(!this.state.resetDuration){
 				this.parent.duration={start:null,end:null};
 				this.state.resetDuration=true;
-			}
-		},
-		StopLoop:function(){
-			if(!(this.state.setLoop=this.state.setLoop)){
-				this.parent.video.loop=false;
-				this.state.setLoop=true;
 			}
 		},
 		SetLayout:function(){
@@ -399,8 +402,8 @@
 		},
 		ChangeQuanlity:function(){
 			if(!(this.state.playerQuality=this.state.playerQuality)){
-				this.parent.player.setPlaybackQuality(this.parent.player.getAvailableQualityLevels()[0]);
-				this.state.playerQuality=this.parent.player&&this.parent.player.getPlaybackQuality()==this.parent.player.getAvailableQualityLevels()[0]
+				this.parent.player.setPlaybackQuality(this.parent.player.getMaxPlaybackQuality());
+				this.state.playerQuality=this.parent.player&&this.parent.player.getPlaybackQuality()==this.parent.player.getMaxPlaybackQuality()
 			}
 		},
 		LoadInfoAndRun:function(){
@@ -468,17 +471,30 @@
 		this.unload.parent=
 		this.init.parent=this;
 
+		let evt='addEventListener';
 		let f=()=>{
-			this.player=$('#movie_player');
-			this.video=$('video');
-			if(this.player&&this.video){
-				this.video.addEventListener('durationchange',()=>this.init.main());
+			let p=this.player=$('#movie_player');
+			let v=this.video=p&&p.querySelector('video');
+			if(p&&v){
+				// add all event handle
+				let reloadTimer=()=>this.toggle(this.curMode);
+				let stopTimer=()=>this.rmTimer();
+				v[evt]('play',reloadTimer);
+				v[evt]('seeked',reloadTimer);
+				v[evt]('ratechange',reloadTimer);
+
+				v[evt]('pause',stopTimer);
+				v[evt]('stalled',stopTimer);
+				v[evt]('suspend',stopTimer);
+				v[evt]('waiting',stopTimer);
+				v[evt]('durationchange',()=>this.init.main());
+
 				this.init.main();
 			}else{
 				setTimeout(f);
 			}
 		};
 		f();
-		window.addEventListener('beforeunload',()=>this.unload.main());
+		window[evt]('beforeunload',()=>this.unload.main());
 	}
 }
