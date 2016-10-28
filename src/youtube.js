@@ -427,13 +427,22 @@
 //		state:{},
 		main:function(){
 			if(!this.changing){
-				let newVideoID=this.parent.player.getVideoStats().docid;
+				let newVideoID=this.parent.player.getVideoData().video_id;
 				if(newVideoID){
-					if(this.state){
+					if(this.curVideoID!=newVideoID){
+						if(!$('#watch8-secondary-actions>button')){
+							setTimeout(()=>this.main());
+						}else{
+							// this.state should be null
+							this.state={};
+							if(this.curVideoID){
+								this.parent.unload.main();
+							}
+							this.curVideoID=newVideoID;
+							this.main();
+						}
+					}else if(this.state){
 						let result=true;
-
-						this.state=this.state||{};
-						this.curVideoID=newVideoID;
 
 						this.changing=true;
 						for(let x in this){
@@ -453,13 +462,6 @@
 						}else{
 							setTimeout(()=>this.main());
 						}
-					}else if(this.curVideoID!=newVideoID){
-						// this.state should be null
-						this.state={};
-						if(this.curVideoID){
-							this.parent.unload.main();
-						}
-						this.main();
 					}
 				}
 			}
