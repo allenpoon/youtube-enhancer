@@ -42,37 +42,50 @@
 //		end:null
 	},
 	setStop:function(){
+		this.curMode=this.mode.stop;
 		this.video.loop=false;
 		this.rmTimer();
 	},
 	setLoop:function(){
+		this.curMode=this.mode.loop;
+
 		let p=this.player;
 		if(	this.duration.end<=p.getCurrentTime()*1000
 		||	p.getCurrentTime()*1000<=this.duration.start
 		){
 			p.seekTo(this.duration.start/1000,true);
 		}
+
 		this.video.loop=true;
-		if(p.getPlayerState()===1
-		||	p.getPlayerState()===3
+		if(	this.duration.end>=p.getCurrentTime()*1000
+		&&	this.duration.start==0
 		){
-			this.setTimer(()=>this.setLoop());
+			if(	p.getPlayerState()===1
+			||	p.getPlayerState()===3
+			){
+				this.setTimer(()=>this.setLoop());
+			}
 		}
 	},
 	setCrop:function(){
+		this.curMode=this.mode.crop;
+
 		let p=this.player;
-		if(this.duration.end<=p.getCurrentTime()*1000
+		if(	this.duration.end<=p.getCurrentTime()*1000
 		&&	p.getPlayerState()===1
 		){
 			p.seekTo(p.getDuration(),true);
 		}else if(p.getCurrentTime()*1000<this.duration.start){
 			p.seekTo(this.duration.start/1000,true);
 		}
+
 		this.video.loop=false;
-		if(p.getPlayerState()===1
-		||	p.getPlayerState()===3
-		){
-			this.setTimer(()=>this.setCrop());
+		if(	this.duration.end>=p.getCurrentTime()*1000){
+			if(	p.getPlayerState()===1
+			||	p.getPlayerState()===3
+			){
+				this.setTimer(()=>this.setCrop());
+			}
 		}
 	},
 	setTimer:function(f){
@@ -151,19 +164,16 @@
 //		}else{
 			let e=this.ui.actionButton;
 			if(mode==this.mode.loop||!mode&&this.curMode==this.mode.stop){
-				this.curMode=this.mode.loop;
 				this.setRange()&&this.showRepeatRange();
 				this.setLoop();
 				e.innerHTML=this.text.Loop;
 				e.title=e.dataset.tooltipText=this.text.TooltipLoopToCrop;
 			}else if(mode==this.mode.crop||!mode&&this.curMode==this.mode.loop){
-				this.curMode=this.mode.crop;
 				this.setRange()&&this.showRepeatRange();
 				this.setCrop();
 				e.innerHTML=this.text.Crop;
 				e.title=e.dataset.tooltipText=this.text.TooltipCropToStop;
 			}else{
-				this.curMode=this.mode.stop;
 				this.setStop();
 				e.innerHTML=this.text.Stop;
 				e.title=e.dataset.tooltipText=this.text.TooltipStopToLoop;
@@ -245,8 +255,7 @@
 			});
 			this.openDB();
 		},
-		setInfo:function(vid,data,cb){
-			data.videoID=vid;
+		setInfo:function(data,cb){
 			this.waitingFunctionList.push(()=>{
 				this.db.transaction(['replayRange'],'readwrite').objectStore('replayRange').put(data).onsuccess=(evt)=>
 					cb&&cb.constructor==Function&&cb(evt.target.result);
@@ -260,18 +269,18 @@
 	unload:{
 		SaveRecordAndRemoveTimer:function(){
 			let p=this.parent;
-			if(p.videoID){
+			if(p.videoID&&p.duration.start&&p.duration.end){
 				p.IndexedDB.setInfo(
-					p.videoID,
 					{
+						videoID:p.videoID,
 						start:p.duration.start,
 						end:p.duration.end,
 						curMode:p.curMode
 					},
 					null
 				);
-				p.videoID=null;
 			}
+			p.videoID=null;
 			p.setStop();
 		},
 		RemoveUIRef:function(){
@@ -352,20 +361,18 @@
 								+'</button>';
 					e.insertBefore(nE,e.lastChild);
 
-					let ui=this.parent.ui;
-					(ui.fromRange=nEc[0]).addEventListener('keyup',(evt)=>
+					let ui=this.parent.ui
+					,	keyEvt=(evt)=>
 							evt.keyCode==13
-							&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop)
-						,false);
+							&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
+
+					(ui.fromRange=nEc[0]).addEventListener('keyup',keyEvt,false);
 
 					(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
 
 					(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
 
-					(ui.toRange=nEc[4]).addEventListener('keyup',(evt)=>
-							evt.keyCode==13
-							&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop)
-					,false);
+					(ui.toRange=nEc[4]).addEventListener('keyup',keyEvt,false);
 
 					(ui.actionButton=nEc[5]).addEventListener('click',()=>p.toggle(),false);
 
@@ -399,8 +406,11 @@
 		},
 		ChangeQuanlity:function(){
 			if(!(this.state.playerQuality=this.state.playerQuality)){
-				this.parent.player.setPlaybackQuality(this.parent.player.getMaxPlaybackQuality());
-				this.state.playerQuality=this.parent.player&&this.parent.player.getPlaybackQuality()==this.parent.player.getMaxPlaybackQuality()
+				let p=this.parent.player;
+				if(p){
+					p.setPlaybackQuality(p.getMaxPlaybackQuality());
+					this.state.playerQuality=p.getPlaybackQuality()==p.getMaxPlaybackQuality();
+				}
 			}
 		},
 		LoadInfoAndRun:function(){
