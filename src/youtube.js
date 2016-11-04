@@ -1,3 +1,5 @@
+// for debugging use
+//window.Replayer={
 {
 	text:{
 		Loop:'├⭮┤',
@@ -56,7 +58,7 @@
 		}
 
 		this.video.loop=true;
-		if(	this.duration.end>=p.getCurrentTime()*1000
+		if(	this.duration.end>=p.getDuration()*1000
 		&&	this.duration.start==0
 		){
 			if(	p.getPlayerState()===1
@@ -79,7 +81,7 @@
 		}
 
 		this.video.loop=false;
-		if(	this.duration.end>=p.getCurrentTime()*1000){
+		if(	this.duration.end<p.getDuration()*1000){
 			if(	p.getPlayerState()===1
 			||	p.getPlayerState()===3
 			){
@@ -499,7 +501,7 @@
 				v[evt]('ratechange',reloadTimer);
 
 				v[evt]('pause',stopTimer);
-				v[evt]('stalled',stopTimer);
+				//v[evt]('stalled',stopTimer);
 				v[evt]('suspend',stopTimer);
 				v[evt]('waiting',stopTimer);
 				v[evt]('durationchange',()=>this.init.main());
