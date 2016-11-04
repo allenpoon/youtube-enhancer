@@ -33,8 +33,7 @@
 	},
 	curMode:1,
 
-//	add \\ before \ because of string
-	format:/^\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*(\\d*)\\D*$/,
+	format:/^\D*(\d*)\D*(\d*)\D*(\d*)\D*(\d*)\D*$/,
 
 //	timer:null,
 	duration:{
@@ -316,46 +315,46 @@
 								// From (Time Range): index == 0
 					nE.innerHTML='<input'
 								+	' size=6'
-								+	' placeholder=\"'+t.PlaceHolderFrom+'\"'
-								+	' title=\"'+t.TooltipFrom+' - '+f+'\"'
-								+	' class=\"yt-uix-tooltip yt-uix-button\"'
-								+	' style=\"text-align:right;font-size:larger;font-weight:bold\"'
+								+	' placeholder="'+t.PlaceHolderFrom+'"'
+								+	' title="'+t.TooltipFrom+' - '+f+'"'
+								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' style="text-align:right;font-size:larger;font-weight:bold"'
 								+'>'
 								// From (Button): index == 1
 								+'<button'
-								+	' title=\"'+t.TooltipFromButton+'\"'
-								+	' class=\"yt-uix-tooltip yt-uix-button\"'
-								+	' style=\"text-align:center;font-size:larger;font-weight:bold\"'
+								+	' title="'+t.TooltipFromButton+'"'
+								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' style="text-align:center;font-size:larger;font-weight:bold"'
 								+'>'
 								+	t.ButtonFrom
 								+'</button>'
 								+'<button'
-								+	' class=\"yt-uix-button\"'
-								+	' style=\"font-size:larger;font-weight:bold\"'
+								+	' class="yt-uix-button"'
+								+	' style="font-size:larger;font-weight:bold"'
 								+'>'
 								+	'-'
 								+'</button>'
 								// To (Button): index == 3
 								+'<button'
-								+	' title=\"'+t.TooltipToButton+'\"'
-								+	' class=\"yt-uix-tooltip yt-uix-button\"'
-								+	' style=\"text-align:center;font-size:larger;font-weight:bold\"'
+								+	' title="'+t.TooltipToButton+'"'
+								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' style="text-align:center;font-size:larger;font-weight:bold"'
 								+'>'
 								+	t.ButtonTo
 								+'</button>'
 								// To (Time Range): index == 4
 								+'<input'
 								+	' size=6'
-								+	' placeholder=\"'+t.PlaceHolderTo+'\"'
-								+	' title=\"'+t.TooltipTo+' - '+f+'\"'
-								+	' class=\"yt-uix-tooltip yt-uix-button\"'
-								+	' style=\"text-align:left;font-size:larger;font-weight:bold\"'
+								+	' placeholder="'+t.PlaceHolderTo+'"'
+								+	' title="'+t.TooltipTo+' - '+f+'"'
+								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' style="text-align:left;font-size:larger;font-weight:bold"'
 								+'>'
 								// Replayer Action (Button): index == 5
 								+'<button'
-								+	' title=\"'+t.TooltipStopToLoop+'\"'
-								+	' class=\"yt-uix-tooltip yt-uix-button\"'
-								+	' style=\"text-align:center;font-size:large;font-weight:bold;width:65px\"'
+								+	' title="'+t.TooltipStopToLoop+'"'
+								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' style="text-align:center;font-size:large;font-weight:bold;width:65px"'
 								+'>'
 								+	t.Stop
 								+'</button>';
