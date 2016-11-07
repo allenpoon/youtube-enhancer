@@ -297,8 +297,8 @@
 					()=>(p.duration={})
 				);
 			}
-			p.videoID=null;
 			p.setStop();
+			p.videoID=null;
 		},
 		RemoveUIRef:function(){
 			this.parent.ui={};
@@ -389,8 +389,8 @@
 		UpdateInterface:function(){
 			if(!(this.state.updateInterface|=0)&&this.state.replayer&&this.state.durationLoaded){
 				let p=this.parent;
-				p.updateInterface();
-				this.state.updateInterface=p.ui.ready=true;
+				setTimeout(()=>(p.ui.ready=true)&&p.updateInterface());
+				this.state.updateInterface=true;
 			}
 		},
 		ChangeYouTubeLayout:function(){
@@ -451,17 +451,11 @@
 				if(newVideoID){
 					if(!this.state){
 						if(p.videoID){
-							console.log('hi');
 							p.unload.main();
 						}
-						if(!$('#watch8-secondary-actions>button')){
-							setTimeout(()=>this.main());
-						}else{
-							// this.state should be null
-							this.state={};
-							this.state.curVideoID=newVideoID;
-							this.main();
-						}
+						this.state={};
+						this.state.curVideoID=newVideoID;
+						this.main();
 					}else{
 						let result=true;
 
