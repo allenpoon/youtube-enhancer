@@ -39,8 +39,15 @@
 
 //	timer:null,
 	duration:{
+//		deprecated, this unit is ms
 //		start:null,
+//		deprecated, this unit is ms
 //		end:null
+
+//		this unit is s
+//		from:null,
+//		this unit is s
+//		to:null
 	},
 	setStop:function(){
 		this.curMode=this.mode.stop;
@@ -51,16 +58,14 @@
 		this.curMode=this.mode.loop;
 
 		let p=this.player;
-		if(	this.duration.end<=p.getCurrentTime()*1000
-		||	p.getCurrentTime()*1000<=this.duration.start
+		if(	this.duration.to<=p.getCurrentTime()
+		||	p.getCurrentTime()<=this.duration.from
 		){
-			p.seekTo(this.duration.start/1000,true);
+			p.seekTo(this.duration.from,true);
 		}
 
 		this.video.loop=true;
-		if(	this.duration.end>=p.getDuration()*1000
-		&&	this.duration.start==0
-		){
+		if(	this.duration.to<p.getDuration()){
 			if(	p.getPlayerState()===1
 			||	p.getPlayerState()===3
 			){
@@ -72,16 +77,16 @@
 		this.curMode=this.mode.crop;
 
 		let p=this.player;
-		if(	this.duration.end<=p.getCurrentTime()*1000
+		if(	this.duration.to<=p.getCurrentTime()
 		&&	p.getPlayerState()===1
 		){
 			p.seekTo(p.getDuration(),true);
-		}else if(p.getCurrentTime()*1000<this.duration.start){
-			p.seekTo(this.duration.start/1000,true);
+		}else if(p.getCurrentTime()<this.duration.from){
+			p.seekTo(this.duration.from,true);
 		}
 
 		this.video.loop=false;
-		if(	this.duration.end<p.getDuration()*1000){
+		if(	this.duration.to<p.getDuration()){
 			if(	p.getPlayerState()===1
 			||	p.getPlayerState()===3
 			){
@@ -91,18 +96,20 @@
 	},
 	setTimer:function(f){
 		this.rmTimer();
-		this.timer=setTimeout(f,(this.duration.end-this.player.getCurrentTime()*1000)/this.player.getPlaybackRate());
+		this.timer=setTimeout(f,(this.duration.to-this.player.getCurrentTime())*1000/this.player.getPlaybackRate());
 	},
 //	Return change of time range
 	setRange:function(){
-//		s == start
-//		e == end
+//		s == from
+//		e == to
+		if(!this.ui.ready)	return;
+
 		let s,e;
 		s=this.getSecond(this.ui.fromRange);
 		e=this.getSecond(this.ui.toRange);
 		
-		if(e<=0||e>(this.player.getDuration()+1)*1000){
-			e=Math.floor(this.player.getDuration()*1000);
+		if(e<=0||e>this.player.getDuration()+1){
+			e=this.player.getDuration();
 		}
 		if(s<0){
 			s=0;
@@ -112,40 +119,53 @@
 			s=e;
 			e=t;
 		}
-
-		if(s==this.duration.start&&e==this.duration.end){
-			return false;
-		}
-
-		this.duration.start=s;
-		this.duration.end=e;
-		
+		this.duration.from=s;
+		this.duration.to=e;
 		return true;
 	},
 	setA:function(){
-		this.duration.start=Math.floor(this.player.getCurrentTime()*1000);
-		if(!this.duration.end
-		||	this.duration.start>this.duration.end
+		this.duration.from=this.player.getCurrentTime();
+		if(!this.duration.to
+		||	this.duration.from>this.duration.to
 		){
-			this.duration.end=Math.floor(this.player.getDuration()*1000);
+			this.duration.to=this.player.getDuration();
 		}
-		this.showRepeatRange();
+		this.updateInterface();
 		this.toggle(this.curMode);
 	},
 	setB:function(){
-		this.duration.end=Math.floor(this.player.getCurrentTime()*1000);
-		if(!this.duration.start
-		||	this.duration.start>this.duration.end
-		||	this.duration.start<0
+		this.duration.to=this.player.getCurrentTime();
+		if(!this.duration.from
+		||	this.duration.from>this.duration.to
+		||	this.duration.from<0
 		){
-			this.duration.start=0;
+			this.duration.from=0;
 		}
-		this.showRepeatRange();
+		this.updateInterface();
 		this.toggle(this.curMode);
 	},
-	showRepeatRange:function(){
-		this.ui.fromRange.value=this.msToStr(this.duration.start);
-		this.ui.toRange.value=this.msToStr(this.duration.end);
+	updateInterface:function(){
+		if(this.ui.ready){
+			if(this.duration.from||this.duration.to){
+				let e=this.ui,eB=e.actionButton;
+				e.fromRange.value=this.msToStr(Math.floor(this.duration.from*1000));
+				e.toRange.value=this.msToStr(Math.floor(this.duration.to*1000));
+				switch(this.curMode){
+					case this.mode.loop:
+						eB.innerHTML=this.text.Loop;
+						eB.title=eB.dataset.tooltipText=this.text.TooltipLoopToCrop;
+						break;
+					case this.mode.crop:
+						eB.innerHTML=this.text.Crop;
+						eB.title=eB.dataset.tooltipText=this.text.TooltipCropToStop;
+						break;
+					case this.mode.stop:
+						eB.innerHTML=this.text.Stop;
+						eB.title=eB.dataset.tooltipText=this.text.TooltipStopToLoop;
+						break;
+				}
+			}
+		}
 	},
 	rmTimer:function(){
 		clearTimeout(this.timer);
@@ -163,46 +183,37 @@
 //			});
 //			// setTimeout(()=>this.toggle(mode),(this.player.getDuration()-this.player.getCurrentTime())*1000);
 //		}else{
-			let e=this.ui.actionButton;
-			if(mode==this.mode.loop||!mode&&this.curMode==this.mode.stop){
-				this.setRange()&&this.showRepeatRange();
+			if(mode==this.mode.loop||(!mode&&this.curMode==this.mode.stop)){
 				this.setLoop();
-				e.innerHTML=this.text.Loop;
-				e.title=e.dataset.tooltipText=this.text.TooltipLoopToCrop;
-			}else if(mode==this.mode.crop||!mode&&this.curMode==this.mode.loop){
-				this.setRange()&&this.showRepeatRange();
+			}else if(mode==this.mode.crop||(!mode&&this.curMode==this.mode.loop)){
 				this.setCrop();
-				e.innerHTML=this.text.Crop;
-				e.title=e.dataset.tooltipText=this.text.TooltipCropToStop;
 			}else{
 				this.setStop();
-				e.innerHTML=this.text.Stop;
-				e.title=e.dataset.tooltipText=this.text.TooltipStopToLoop;
 			}
+			this.updateInterface();
 //		}
 	},
-	toSecond:function(v,l){
-		if(v.constructor==String&&l==1){
-			if(v.length>=3)return Number(v);
-			if(v.length==2)return Number(v)*10;
-			if(v.length==1)return Number(v)*100;
-		}
-		if(l<=4&&l>0)	return this.toSecond(Number(v)*[60,60,1000,1][4-l],l-1);
-		return Number(v);
-	},
-
 //	e:DOMInputElement
 //  c:int == count
 //  t:array(string) == time list
 	getSecond:function(e){
-		let t=e.value.match(this.format),c=4;
+		let t=e.value.match(this.format),c=4,ms=(v,l)=>{
+			if(v.constructor==String&&l==1){
+				if(v.length>=3)return Number(v);
+				if(v.length==2)return Number(v)*10;
+				if(v.length==1)return Number(v)*100;
+			}
+			if(l<=4&&l>0)
+				return ms(Number(v)*[60,60,1000,1][4-l],l-1);
+			return Number(v);
+		};
 		switch(''){
 			case t[1]:c--;
 			case t[2]:c--;
 			case t[3]:c--;
 			case t[4]:c--;
 		}
-		return c?(this.toSecond(t[1],c)+this.toSecond(t[2],c-1)+this.toSecond(t[3],c-2)+this.toSecond(t[4],c-3)):0;
+		return c?(ms(t[1],c)+ms(t[2],c-1)+ms(t[3],c-2)+ms(t[4],c-3))/1000:0;
 	},
 	msToStr:function(t){
 		// s = [<ms>, <s>, <m>, <h>]
@@ -250,7 +261,12 @@
 				this.db.transaction(['replayRange']).objectStore('replayRange').get(vid).onsuccess=(evt)=>{
 					// for Database upgrade
 					let r=evt.target.result;
-					r&&!r.curMode&&(r.curMode=r.autoPlay?this.parent.mode.loop:this.parent.mode.stop)&&delete r.autoPlay;
+					if(r){
+						!r.curMode&&(r.curMode=r.autoPlay?this.parent.mode.loop:this.parent.mode.stop)&&delete r.autoPlay;
+						r.end&&(r.to=r.end/1000)&&delete r.end;
+						r.start&&(r.from=r.start/1000)&&delete r.start;
+						r.to&&!r.from&&(r.from=0);
+					}
 					cb&&cb.constructor==Function&&cb(r);
 				};
 			});
@@ -270,22 +286,21 @@
 	unload:{
 		SaveRecordAndRemoveTimer:function(){
 			let p=this.parent;
-			if(p.videoID&&p.duration.start&&p.duration.end){
+			if(p.videoID&&p.duration.to){
 				p.IndexedDB.setInfo(
 					{
 						videoID:p.videoID,
-						start:p.duration.start,
-						end:p.duration.end,
+						from:p.duration.from,
+						to:p.duration.to,
 						curMode:p.curMode
 					},
-					null
+					()=>(p.duration={})
 				);
 			}
 			p.videoID=null;
 			p.setStop();
 		},
 		RemoveUIRef:function(){
-			delete this.parent.ui;
 			this.parent.ui={};
 		},
 //		changing:false,
@@ -300,14 +315,8 @@
 		}
 	},
 	init:{
-		UpdateDuration:function(){
-			if(!this.state.resetDuration){
-				this.parent.duration={start:null,end:null};
-				this.state.resetDuration=true;
-			}
-		},
 		SetLayout:function(){
-			if(!(this.state.replayer=this.state.replayer)&&this.state.menuList){
+			if(!(this.state.replayer|=0)){
 				let e=$('#watch8-secondary-actions');
 				if(e){
 					let p=this.parent,t=p.text,f=t.TooltipFormat,nE=document.createElement('div'),nEc=nE.children;
@@ -365,20 +374,23 @@
 					let ui=this.parent.ui
 					,	keyEvt=(evt)=>
 							evt.keyCode==13
-							&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
+							&&p.setRange()&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
 
 					(ui.fromRange=nEc[0]).addEventListener('keyup',keyEvt,false);
-
 					(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
-
 					(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
-
 					(ui.toRange=nEc[4]).addEventListener('keyup',keyEvt,false);
-
 					(ui.actionButton=nEc[5]).addEventListener('click',()=>p.toggle(),false);
 
 					this.state.replayer=true;
 				}
+			}
+		},
+		UpdateInterface:function(){
+			if(!(this.state.updateInterface|=0)&&this.state.replayer&&this.state.durationLoaded){
+				let p=this.parent;
+				p.updateInterface();
+				this.state.updateInterface=p.ui.ready=true;
 			}
 		},
 		ChangeYouTubeLayout:function(){
@@ -393,7 +405,7 @@
 
 			// move share button to more
 			// execute too much time before interface ready
-			if(!(this.state.menuList=this.state.menuList)){
+			if(!(this.state.menuList|=0)){
 				let e=$('#watch8-secondary-actions'),eMenu=e&&e.querySelector('ul');
 				if(eMenu){
 					let eC=e.children,eLi=document.createElement('li');
@@ -406,7 +418,7 @@
 			}
 		},
 		ChangeQuanlity:function(){
-			if(!(this.state.playerQuality=this.state.playerQuality)){
+			if(!(this.state.playerQuality|=0)){
 				let p=this.parent.player;
 				if(p){
 					p.setPlaybackQuality(p.getMaxPlaybackQuality());
@@ -415,18 +427,18 @@
 			}
 		},
 		LoadInfoAndRun:function(){
-			if(!(this.state.IDBOpenReq=this.state.IDBOpenReq)&&this.state.replayer){
+			if(!(this.state.durationLoading|=0)){
 				let p=this.parent;
 				p.IndexedDB.init();
-				this.state.IDBOpenReq=p.IndexedDB.isReqOpen;
+				this.state.durationLoading=true;
+				this.state.durationLoaded=false;
 				p.IndexedDB.getInfoByVideoID(this.state.curVideoID,(info)=>{
 					if(info){
-						p.duration.start=info.start;
-						p.duration.end=info.end;
-						p.curMode=info.curMode;
-						p.showRepeatRange();
+						p.duration.from=info.from;
+						p.duration.to=info.to;
 						p.toggle(info.curMode);
 					}
+					this.state.durationLoading=this.state.durationLoaded=p.IndexedDB.isReqOpen;
 				});
 			}
 		},
@@ -437,8 +449,9 @@
 			if(!this.changing&&p.isVideoChanged()){
 				let newVideoID=p.player.getVideoData().video_id;
 				if(newVideoID){
-					if(p.isVideoChanged()&&!this.state){
+					if(!this.state){
 						if(p.videoID){
+							console.log('hi');
 							p.unload.main();
 						}
 						if(!$('#watch8-secondary-actions>button')){
@@ -506,7 +519,7 @@
 				v[evt]('waiting',stopTimer);
 				v[evt]('durationchange',()=>this.init.main());
 
-				this.init.main();
+				//this.init.main();
 			}else{
 				setTimeout(f);
 			}
