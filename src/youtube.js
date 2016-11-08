@@ -65,7 +65,7 @@
 		}
 
 		this.video.loop=true;
-		if(	this.duration.to<p.getDuration()){
+		if(	this.duration.to+0.001<p.getDuration()){
 			if(	p.getPlayerState()===1
 			||	p.getPlayerState()===3
 			){
@@ -86,7 +86,7 @@
 		}
 
 		this.video.loop=false;
-		if(	this.duration.to<p.getDuration()){
+		if(	this.duration.to+0.001<p.getDuration()){
 			if(	p.getPlayerState()===1
 			||	p.getPlayerState()===3
 			){
@@ -503,18 +503,19 @@
 			if(p&&v){
 				// add all event handle
 				let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
-				let stopTimer=()=>this.rmTimer();
 				v[evt]('play',reloadTimer);
 				v[evt]('seeked',reloadTimer);
 				v[evt]('ratechange',reloadTimer);
 
+				let stopTimer=()=>this.rmTimer();
 				v[evt]('pause',stopTimer);
 				//v[evt]('stalled',stopTimer);
 				v[evt]('suspend',stopTimer);
 				v[evt]('waiting',stopTimer);
-				v[evt]('durationchange',()=>this.init.main());
 
-				//this.init.main();
+				let init=()=>this.init.main();
+				v[evt]('durationchange',init);
+				init();
 			}else{
 				setTimeout(f);
 			}
