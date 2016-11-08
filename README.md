@@ -16,7 +16,7 @@
 1. Clone this repository
 2. Update src/*
 3. Use bash in *nix or Ubuntu on Windows 10
-  - ```bash translate.sh````
+  - ```bash translate.sh```
 
 ## Install
 
@@ -34,7 +34,7 @@ Not yet available
 
 ## Input format
 - (empty)
-  - 00:00:00.000 / <end of video>
+  - 00:00:00.000 / \<end of video>
 - 1
   - 00:00:00.100
 - 12
