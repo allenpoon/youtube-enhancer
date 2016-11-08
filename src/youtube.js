@@ -320,21 +320,22 @@
 				let e=$('#watch8-secondary-actions');
 				if(e){
 					let p=this.parent,t=p.text,f=t.TooltipFormat,nE=document.createElement('div'),nEc=nE.children;
-					nE.classList.add('yt-uix-menu','yt-uix-button-opacity','yt-uix-button-text');
+					//nE.classList.add('yt-uix-button','yt-uix-button-opacity','yt-uix-button-text');
 					nE.style.border='2px solid grey';
 					nE.style.borderRadius='10px';
+					nE.style.display='inline-block';
 								// From (Time Range): index == 0
 					nE.innerHTML='<input'
 								+	' size=6'
 								+	' placeholder="'+t.PlaceHolderFrom+'"'
 								+	' title="'+t.TooltipFrom+' - '+f+'"'
-								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
 								+	' style="text-align:right;font-size:larger;font-weight:bold"'
 								+'>'
 								// From (Button): index == 1
 								+'<button'
 								+	' title="'+t.TooltipFromButton+'"'
-								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
 								+	' style="text-align:center;font-size:larger;font-weight:bold"'
 								+'>'
 								+	t.ButtonFrom
@@ -348,7 +349,7 @@
 								// To (Button): index == 3
 								+'<button'
 								+	' title="'+t.TooltipToButton+'"'
-								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
 								+	' style="text-align:center;font-size:larger;font-weight:bold"'
 								+'>'
 								+	t.ButtonTo
@@ -358,13 +359,13 @@
 								+	' size=6'
 								+	' placeholder="'+t.PlaceHolderTo+'"'
 								+	' title="'+t.TooltipTo+' - '+f+'"'
-								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
 								+	' style="text-align:left;font-size:larger;font-weight:bold"'
 								+'>'
 								// Replayer Action (Button): index == 5
 								+'<button'
 								+	' title="'+t.TooltipStopToLoop+'"'
-								+	' class="yt-uix-tooltip yt-uix-button"'
+								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
 								+	' style="text-align:center;font-size:large;font-weight:bold;width:65px"'
 								+'>'
 								+	t.Stop
