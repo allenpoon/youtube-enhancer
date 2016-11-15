@@ -381,7 +381,7 @@
 					(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
 					(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
 					(ui.toRange=nEc[4]).addEventListener('keyup',keyEvt,false);
-					(ui.actionButton=nEc[5]).addEventListener('click',()=>p.toggle(),false);
+					(ui.actionButton=nEc[5]).addEventListener('click',()=>p.setRange()&&p.toggle(),false);
 
 					this.state.replayer=true;
 				}
