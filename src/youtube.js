@@ -102,11 +102,10 @@
 	setRange:function(){
 //		s == from
 //		e == to
-		if(!this.ui.ready)	return;
+		if(!this.ui.ready)	return false;
 
-		let s,e;
-		s=this.getSecond(this.ui.fromRange);
-		e=this.getSecond(this.ui.toRange);
+		let s=this.getSecond(this.ui.fromRange)
+			,e=this.getSecond(this.ui.toRange);
 		
 		if(e<=0||e>this.player.getDuration()+1){
 			e=this.player.getDuration();
@@ -115,9 +114,7 @@
 			s=0;
 		}
 		if(e<s){
-			let t=s;
-			s=e;
-			e=t;
+			[s,e]=[e,s];
 		}
 		this.duration.from=s;
 		this.duration.to=e;
@@ -194,8 +191,8 @@
 //		}
 	},
 //	e:DOMInputElement
-//  c:int == count
-//  t:array(string) == time list
+//	c:int == count
+//	t:array(string) == time list
 	getSecond:function(e){
 		let t=e.value.match(this.format),c=4,ms=(v,l)=>{
 			if(v.constructor==String&&l==1){
@@ -422,8 +419,8 @@
 			if(!(this.state.playerQuality|=0)){
 				let p=this.parent.player;
 				if(p){
-					p.setPlaybackQuality(p.getMaxPlaybackQuality());
-					this.state.playerQuality=p.getPlaybackQuality()==p.getMaxPlaybackQuality();
+					p.setPlaybackQuality(p.getAvailableQualityLevels()[0]);
+					this.state.playerQuality=p.getPlaybackQuality()==p.getAvailableQualityLevels()[0];
 				}
 			}
 		},
@@ -496,30 +493,29 @@
 
 		let evt='addEventListener'
 		,	f=()=>{
+				let p=this.player=$('#movie_player')
+				,	v=this.video=p&&p.querySelector('video');
 
-			let p=this.player=$('#movie_player')
-			,	v=this.video=p&&p.querySelector('video');
+				if(p&&v){
+					// add all event handle
+					let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
+					v[evt]('play',reloadTimer);
+					v[evt]('seeked',reloadTimer);
+					v[evt]('ratechange',reloadTimer);
 
-			if(p&&v){
-				// add all event handle
-				let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
-				v[evt]('play',reloadTimer);
-				v[evt]('seeked',reloadTimer);
-				v[evt]('ratechange',reloadTimer);
+					let stopTimer=()=>this.rmTimer();
+					v[evt]('pause',stopTimer);
+					//v[evt]('stalled',stopTimer);
+					v[evt]('suspend',stopTimer);
+					v[evt]('waiting',stopTimer);
 
-				let stopTimer=()=>this.rmTimer();
-				v[evt]('pause',stopTimer);
-				//v[evt]('stalled',stopTimer);
-				v[evt]('suspend',stopTimer);
-				v[evt]('waiting',stopTimer);
-
-				let init=()=>this.init.main();
-				v[evt]('durationchange',init);
-				init();
-			}else{
-				setTimeout(f);
-			}
-		};
+					let init=()=>this.init.main();
+					v[evt]('durationchange',init);
+					init();
+				}else{
+					setTimeout(f);
+				}
+			};
 		f();
 		window[evt]('beforeunload',()=>this.unload.main());
 	}
