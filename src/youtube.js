@@ -105,7 +105,7 @@
 		if(!this.ui.ready)	return false;
 
 		let s=this.getSecond(this.ui.fromRange)
-			,e=this.getSecond(this.ui.toRange);
+		,	e=this.getSecond(this.ui.toRange);
 		
 		if(e<=0||e>this.player.getDuration()+1){
 			e=this.player.getDuration();
@@ -144,9 +144,10 @@
 	updateInterface:function(){
 		if(this.ui.ready){
 			if(this.duration.from||this.duration.to){
-				let e=this.ui,eB=e.actionButton;
-				e.fromRange.value=this.msToStr(Math.floor(this.duration.from*1000));
-				e.toRange.value=this.msToStr(Math.floor(this.duration.to*1000));
+				let e=this.ui
+				,	eB=e.actionButton;
+				e.fromRange.value=this.msToStr(this.duration.from*1000);
+				e.toRange.value=this.msToStr(this.duration.to*1000);
 				switch(this.curMode){
 					case this.mode.loop:
 						eB.innerHTML=this.text.Loop;
@@ -194,16 +195,18 @@
 //	c:int == count
 //	t:array(string) == time list
 	getSecond:function(e){
-		let t=e.value.match(this.format),c=4,ms=(v,l)=>{
-			if(v.constructor==String&&l==1){
-				if(v.length>=3)return Number(v);
-				if(v.length==2)return Number(v)*10;
-				if(v.length==1)return Number(v)*100;
-			}
-			if(l<=4&&l>0)
-				return ms(Number(v)*[60,60,1000,1][4-l],l-1);
-			return Number(v);
-		};
+		let t=e.value.match(this.format)
+		,	c=4
+		,	ms=(v,l)=>{
+				if(v.constructor==String&&l==1){
+					if(v.length>=3)return Number(v);
+					if(v.length==2)return Number(v)*10;
+					if(v.length==1)return Number(v)*100;
+				}
+				if(l<=4&&l>0)
+					return ms(Number(v)*[60,60,1000,1][4-l],l-1);
+				return Number(v);
+			};
 		switch(''){
 			case t[1]:c--;
 			case t[2]:c--;
@@ -213,12 +216,14 @@
 		return c?(ms(t[1],c)+ms(t[2],c-1)+ms(t[3],c-2)+ms(t[4],c-3))/1000:0;
 	},
 	msToStr:function(t){
-		// s = [<ms>, <s>, <m>, <h>]
-		let s=[t%1000,Math.floor(t/1000)%60,Math.floor(t/(60*1000))%60,Math.floor(t/(60*60*1000))];
-		return	(s[3]>9?(s[3]+':'):s[3]>0?('0'+s[3]+':'):'')
-				+(s[2]>9?(s[2]+':'):s[2]>0?('0'+s[2]+':'):s[3]>0?'00:':'')
-				+(s[1]>9?(s[1]+'.'):s[1]>0?('0'+s[1]+'.'):'00.')
-				+(s[0]>99?s[0]:s[0]>9?'0'+s[0]:'00'+s[0]);
+		let ms=Math.floor(t)%1000
+		,	s=Math.floor(t/1000)%60
+		,	m=Math.floor(t/(60*1000))%60
+		,	h=Math.floor(t/(60*60*1000));
+		return	(h>9?(h+':'):h>0?('0'+h+':'):'')
+			+	(m>9?(m+':'):m>0?('0'+m+':'):h>0?'00:':'')
+			+	(s>9?(s+'.'):s>0?('0'+s+'.'):'00.')
+			+	(ms>99?ms:ms>9?'0'+ms:'00'+ms);
 	},
 	IndexedDB:{
 		isOpen:false,
@@ -316,7 +321,11 @@
 			if(!(this.state.replayer|=0)){
 				let e=$('#watch8-secondary-actions');
 				if(e){
-					let p=this.parent,t=p.text,f=t.TooltipFormat,nE=document.createElement('div'),nEc=nE.children;
+					let p=this.parent
+					,	t=p.text
+					,	f=t.TooltipFormat
+					,	nE=document.createElement('div')
+					,	nEc=nE.children;
 					//nE.classList.add('yt-uix-button','yt-uix-button-opacity','yt-uix-button-text');
 					nE.style.border='2px solid grey';
 					nE.style.borderRadius='10px';
@@ -372,7 +381,8 @@
 					let ui=this.parent.ui
 					,	keyEvt=(evt)=>
 							evt.keyCode==13
-							&&p.setRange()&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
+							&&p.setRange()
+							&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
 
 					(ui.fromRange=nEc[0]).addEventListener('keyup',keyEvt,false);
 					(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
