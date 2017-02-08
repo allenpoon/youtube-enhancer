@@ -320,7 +320,7 @@
 		SetLayout:function(){
 			if(!(this.state.replayer|=0)){
 				let e=$('#watch8-secondary-actions');
-				if(e){
+				if(e&&$('#watch8-secondary-actions>.action-panel-trigger-share')){
 					let p=this.parent
 					,	t=p.text
 					,	f=t.TooltipFormat
