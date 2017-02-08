@@ -86,7 +86,7 @@
 		}
 
 		this.video.loop=false;
-		if(	this.duration.to+0.001<p.getDuration()){
+		if(this.duration.to+0.001<p.getDuration()){
 			if(	p.getPlayerState()===1
 			||	p.getPlayerState()===3
 			){
@@ -413,7 +413,7 @@
 
 			// move share button to more
 			// execute too much time before interface ready
-			if(!(this.state.menuList|=0)){
+			if(this.state.replayer&&!(this.state.menuList|=0)){
 				let e=$('#watch8-secondary-actions'),eMenu=e&&e.querySelector('ul');
 				if(eMenu){
 					let eC=e.children,eLi=document.createElement('li');
