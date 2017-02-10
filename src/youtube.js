@@ -66,9 +66,7 @@
 
 		this.video.loop=true;
 		if(	this.duration.to+0.001<p.getDuration()){
-			if(	p.getPlayerState()===1
-			||	p.getPlayerState()===3
-			){
+			if(	p.getPlayerState()===1){
 				this.setTimer(()=>this.setLoop());
 			}
 		}
@@ -81,15 +79,13 @@
 		&&	p.getPlayerState()===1
 		){
 			p.seekTo(p.getDuration(),true);
-		}else if(p.getCurrentTime()<this.duration.from){
+		}else if(p.getCurrentTime()+0.05<this.duration.from){
 			p.seekTo(this.duration.from,true);
 		}
 
 		this.video.loop=false;
-		if(this.duration.to+0.001<p.getDuration()){
-			if(	p.getPlayerState()===1
-			||	p.getPlayerState()===3
-			){
+		if(this.duration.to+0.05<p.getDuration()){
+			if(	p.getPlayerState()===1){
 				this.setTimer(()=>this.setCrop());
 			}
 		}
@@ -509,9 +505,10 @@
 				if(p&&v){
 					// add all event handle
 					let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
-					v[evt]('play',reloadTimer);
-					v[evt]('seeked',reloadTimer);
-					v[evt]('ratechange',reloadTimer);
+//					v[evt]('play',reloadTimer);
+					v[evt]('playing',reloadTimer);
+//					v[evt]('seeked',reloadTimer);
+//					v[evt]('ratechange',reloadTimer);
 
 					let stopTimer=()=>this.rmTimer();
 					v[evt]('pause',stopTimer);
