@@ -66,7 +66,7 @@
 
 		this.video.loop=true;
 		if(	this.duration.to+0.001<p.getDuration()){
-			if(	p.getPlayerState()===1){
+			if(p.getPlayerState()===1){
 				this.setTimer(()=>this.setLoop());
 			}
 		}
@@ -85,7 +85,7 @@
 
 		this.video.loop=false;
 		if(this.duration.to+0.05<p.getDuration()){
-			if(	p.getPlayerState()===1){
+			if(p.getPlayerState()===1){
 				this.setTimer(()=>this.setCrop());
 			}
 		}
@@ -291,12 +291,12 @@
 						from:p.duration.from,
 						to:p.duration.to,
 						curMode:p.curMode
-					},
-					()=>(p.duration={})
+					}
 				);
+				p.duration={};
+				p.setStop();
+				p.videoID=null;
 			}
-			p.setStop();
-			p.videoID=null;
 		},
 		RemoveUIRef:function(){
 			this.parent.ui={};
@@ -442,7 +442,7 @@
 						p.duration.to=info.to;
 						p.toggle(info.curMode);
 					}
-					this.state.durationLoading=this.state.durationLoaded=p.IndexedDB.isReqOpen;
+					this.state.durationLoaded=true;
 				});
 			}
 		},
@@ -450,39 +450,40 @@
 //		state:{},
 		main:function(){
 			let p=this.parent;
+			let newVideoID=p.player.getVideoData().video_id;
+			if(this.state&&this.state.curVideoID!=newVideoID){
+				this.changing=false;
+				delete this.state;
+			}
 			if(!this.changing&&p.isVideoChanged()){
-				let newVideoID=p.player.getVideoData().video_id;
 				if(newVideoID){
 					if(!this.state){
-						if(p.videoID){
-							p.unload.main();
-						}
+						p.unload.main();
 						this.state={};
 						this.state.curVideoID=newVideoID;
-						this.main();
+					}
+
+					let result=true;
+
+					this.changing=true;
+					for(let x in this){
+						this[x].constructor==Function&&this[x]();
+					}
+					this.changing=false;
+
+					for(let x in this.state){
+						if(!this.state[x]){
+							result=false;
+							break;
+						}
+					}
+
+					if(result){
+						// allow event trigger
+						p.videoID=newVideoID;
+						delete this.state;
 					}else{
-						let result=true;
-
-						this.changing=true;
-						for(let x in this){
-							this[x].constructor==Function&&this[x]();
-						}
-						this.changing=false;
-
-						for(let x in this.state){
-							if(!this.state[x]){
-								result=false;
-								break;
-							}
-						}
-
-						if(result){
-							// allow event trigger
-							p.videoID=newVideoID;
-							delete this.state;
-						}else{
-							setTimeout(()=>this.main());
-						}
+						setTimeout(()=>this.main(),100);
 					}
 				}
 			}
