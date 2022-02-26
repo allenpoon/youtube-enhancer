@@ -327,35 +327,41 @@ window.Replayer=
 				delete this.state;
 			}
 			if(!this.changing&&p.isVideoChanged()){
+				if(!this.state){
+					this.state={};
+					this.state.curVideoID=newVideoID;
+
+					// reset setting
+					p.curMode=p.mode.stop;
+					p.video.loop=false;
+					p.duration={};
+					p.videoID=null;
+				}
+
 				if(newVideoID){
-					if(!this.state){
-						p.unload.main();
-						this.state={};
-						this.state.curVideoID=newVideoID;
-					}
+					if(p.player.getPlayerState()==1){
+						let result=true;
 
-					let result=true;
+						this.changing=true;
+						for(let x in this){
+							this[x].constructor==Function&&this[x]();
+						}
+						this.changing=false;
 
-					this.changing=true;
-					for(let x in this){
-						this[x].constructor==Function&&this[x]();
-					}
-					this.changing=false;
+						for(let x in this.state){
+							if(!this.state[x]){
+								result=false;
+								break;
+							}
+						}
 
-					for(let x in this.state){
-						if(!this.state[x]){
-							result=false;
-							break;
+						if(result){
+							// allow event trigger
+							p.videoID=newVideoID;
+							return delete this.state;
 						}
 					}
-
-					if(result){
-						// allow event trigger
-						p.videoID=newVideoID;
-						delete this.state;
-					}else{
-						setTimeout(()=>this.main(),1000);
-					}
+					setTimeout(()=>this.main(),1000);
 				}
 			}
 		}
@@ -373,7 +379,7 @@ window.Replayer=
 				let p=this.player=$('#movie_player')
 				,	v=this.video=p&&p.querySelector('video');
 
-				if(p&&v&&p.getPlayerState()==1){
+				if(p&&v){
 					// add all event handle
 					// let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
 					// v[evt]('play',reloadTimer);
@@ -387,7 +393,7 @@ window.Replayer=
 					// v[evt]('suspend',stopTimer);
 					// v[evt]('waiting',stopTimer);
 
-					let init=()=>this.init.main();
+					let init=()=>setTimeout(()=>this.init.main());
 					v[evt]('durationchange',init);
 					init();
 				}else{
