@@ -1,6 +1,6 @@
 {
 	"name":"YouTube Enhancer",
-	"version":"12.0.0",
+	"version":"12.1",
 	"manifest_version":2,
 	"description":"Enhance user experience in YouTube",
 	"content_scripts":[

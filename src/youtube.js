@@ -64,14 +64,14 @@ window.Replayer=
 		}
 
 		let p=this.player;
-		if(	this.duration.to<=p.getCurrentTime()
+		if(this.duration.to<=p.getCurrentTime()
 		||	p.getCurrentTime()<=this.duration.from
 		){
 			p.seekTo(this.duration.from,true);
 		}
 
 		this.video.loop=true;
-		if(	this.duration.to+0.001<p.getDuration()){
+		if(this.duration.to+0.001<p.getDuration()){
 				this.setTimer(()=>this.setLoop());
 		}
 	},
@@ -83,7 +83,7 @@ window.Replayer=
 		this.IndexedDB.save();
 
 		let p=this.player;
-		if(	this.duration.to<=p.getCurrentTime()
+		if(this.duration.to<=p.getCurrentTime()
 		&&	p.getPlayerState()===1
 		){
 			p.seekTo(p.getDuration(),true);
