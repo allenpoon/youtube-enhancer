@@ -381,11 +381,11 @@ window.Replayer=
 
 				if(p&&v){
 					// add all event handle
-					// let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
+					let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
 					// v[evt]('play',reloadTimer);
 					// v[evt]('playing',reloadTimer);
-					// v[evt]('seeked',reloadTimer);
-					// v[evt]('ratechange',reloadTimer);
+					v[evt]('seeked',reloadTimer);
+					v[evt]('ratechange',reloadTimer);
 
 					// let stopTimer=()=>this.rmTimer();
 					// v[evt]('pause',stopTimer);
