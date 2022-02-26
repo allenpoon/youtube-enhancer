@@ -8,8 +8,7 @@
 3. Auto save video setting
 4. Auto loop/crop if it set to loop in that video last time
 5. A-B Range setup button
-6. Auto update timer if video event is triggered
-7. Support changing playback rate
+6. Support different playback rate
 
 ## Build
 
@@ -31,6 +30,19 @@
 ### From Chrome extension store
 
 Not yet available
+
+## Usage
+
+### On Console tab in DevTools
+
+1. Set Range
+  - ```Replayer.setRange(from, to)```
+  - ```Replayer.setA()```
+  - ```Replayer.setB()```
+2. Set to Loop / Crop / Stop mode
+  - ```Replayer.setLoop()```
+  - ```Replayer.setCrop()```
+  - ```Replayer.setStop()```
 
 ## Input format
 - (empty)

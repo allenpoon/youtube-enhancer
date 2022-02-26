@@ -1,5 +1,5 @@
 // for debugging use
-//window.Replayer={
+window.Replayer=
 {
 	text:{
 		Loop:'├⭮┤',
@@ -51,11 +51,13 @@
 	},
 	setStop:function(){
 		this.curMode=this.mode.stop;
+		this.IndexedDB.save();
 		this.video.loop=false;
 		this.rmTimer();
 	},
 	setLoop:function(){
 		this.curMode=this.mode.loop;
+		this.IndexedDB.save();
 
 		let p=this.player;
 		if(	this.duration.to<=p.getCurrentTime()
@@ -66,13 +68,12 @@
 
 		this.video.loop=true;
 		if(	this.duration.to+0.001<p.getDuration()){
-			if(p.getPlayerState()===1){
 				this.setTimer(()=>this.setLoop());
-			}
 		}
 	},
 	setCrop:function(){
 		this.curMode=this.mode.crop;
+		this.IndexedDB.save();
 
 		let p=this.player;
 		if(	this.duration.to<=p.getCurrentTime()
@@ -85,9 +86,7 @@
 
 		this.video.loop=false;
 		if(this.duration.to+0.05<p.getDuration()){
-			if(p.getPlayerState()===1){
 				this.setTimer(()=>this.setCrop());
-			}
 		}
 	},
 	setTimer:function(f){
@@ -95,14 +94,13 @@
 		this.timer=setTimeout(f,(this.duration.to-this.player.getCurrentTime())*1000/this.player.getPlaybackRate());
 	},
 //	Return change of time range
-	setRange:function(){
-//		s == from
-//		e == to
-		if(!this.ui.ready)	return false;
+	setRange:function(from,to){
+		// if(!this.ui.ready)	return false;
 
-		let s=this.getSecond(this.ui.fromRange)
-		,	e=this.getSecond(this.ui.toRange);
-		
+		// let s=this.getSecondFromElement(this.ui.fromRange)
+		// ,	e=this.getSecondFromElement(this.ui.toRange);
+		let s=this.getSecond(from)
+		,	e=this.getSecond(to);
 		if(e<=0||e>this.player.getDuration()+1){
 			e=this.player.getDuration();
 		}
@@ -114,6 +112,7 @@
 		}
 		this.duration.from=s;
 		this.duration.to=e;
+		this.IndexedDB.save();
 		return true;
 	},
 	setA:function(){
@@ -123,7 +122,7 @@
 		){
 			this.duration.to=this.player.getDuration();
 		}
-		this.updateInterface();
+		this.IndexedDB.save();
 		this.toggle(this.curMode);
 	},
 	setB:function(){
@@ -134,7 +133,7 @@
 		){
 			this.duration.from=0;
 		}
-		this.updateInterface();
+		this.IndexedDB.save();
 		this.toggle(this.curMode);
 	},
 	updateInterface:function(){
@@ -166,17 +165,6 @@
 		this.timer=null;
 	},
 	toggle:function(mode){
-//		let v=this.video;
-//		if(this.player.getAdState()>0){
-//			let f;
-//			v.addEventListener('durationchange',f=()=>{
-//				if(!isNaN(v.duration)){
-//					v.removeEventListener('durationchange',f);
-//					this.toggle(mode);
-//				}
-//			});
-//			// setTimeout(()=>this.toggle(mode),(this.player.getDuration()-this.player.getCurrentTime())*1000);
-//		}else{
 			if(mode==this.mode.loop||(!mode&&this.curMode==this.mode.stop)){
 				this.setLoop();
 			}else if(mode==this.mode.crop||(!mode&&this.curMode==this.mode.loop)){
@@ -190,8 +178,11 @@
 //	e:DOMInputElement
 //	c:int == count
 //	t:array(string) == time list
-	getSecond:function(e){
-		let t=e.value.match(this.format)
+	getSecondFromElement:function(e){
+		return this.getSecond(e.value);
+	},
+	getSecond:function(s=''){
+		let t=String(s).match(this.format)
 		,	c=4
 		,	ms=(v,l)=>{
 				if(v.constructor==String&&l==1){
@@ -222,6 +213,7 @@
 			+	(ms>99?ms:ms>9?'0'+ms:'00'+ms);
 	},
 	IndexedDB:{
+		parent:{},
 		isOpen:false,
 		isReqOpen:false,
 //		dbreq:null,
@@ -277,6 +269,19 @@
 			});
 			this.openDB();
 		},
+		save:function(){
+			let p=this.parent;
+			if(p.videoID){
+				p.IndexedDB.setInfo(
+					{
+						videoID:p.videoID,
+						from:p.duration.from,
+						to:p.duration.to,
+						curMode:p.curMode
+					}
+				);
+			}
+		},
 		init:function(){
 			!this.isReqOpen&&this.openDB();
 		}
@@ -313,121 +318,142 @@
 		}
 	},
 	init:{
-		SetLayout:function(){
-			if(!(this.state.replayer|=0)){
-				let e=$('#watch8-secondary-actions');
-				if(e&&$('#watch8-secondary-actions>.action-panel-trigger-share')){
-					let p=this.parent
-					,	t=p.text
-					,	f=t.TooltipFormat
-					,	nE=document.createElement('div')
-					,	nEc=nE.children;
-					//nE.classList.add('yt-uix-button','yt-uix-button-opacity','yt-uix-button-text');
-					nE.style.border='2px solid grey';
-					nE.style.borderRadius='10px';
-					nE.style.display='inline-block';
-								// From (Time Range): index == 0
-					nE.innerHTML='<input'
-								+	' size=6'
-								+	' placeholder="'+t.PlaceHolderFrom+'"'
-								+	' title="'+t.TooltipFrom+' - '+f+'"'
-								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-								+	' style="text-align:right;font-size:larger;font-weight:bold"'
-								+'>'
-								// From (Button): index == 1
-								+'<button'
-								+	' title="'+t.TooltipFromButton+'"'
-								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-								+	' style="text-align:center;font-size:larger;font-weight:bold"'
-								+'>'
-								+	t.ButtonFrom
-								+'</button>'
-								+'<button'
-								+	' class="yt-uix-button"'
-								+	' style="font-size:larger;font-weight:bold"'
-								+'>'
-								+	'-'
-								+'</button>'
-								// To (Button): index == 3
-								+'<button'
-								+	' title="'+t.TooltipToButton+'"'
-								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-								+	' style="text-align:center;font-size:larger;font-weight:bold"'
-								+'>'
-								+	t.ButtonTo
-								+'</button>'
-								// To (Time Range): index == 4
-								+'<input'
-								+	' size=6'
-								+	' placeholder="'+t.PlaceHolderTo+'"'
-								+	' title="'+t.TooltipTo+' - '+f+'"'
-								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-								+	' style="text-align:left;font-size:larger;font-weight:bold"'
-								+'>'
-								// Replayer Action (Button): index == 5
-								+'<button'
-								+	' title="'+t.TooltipStopToLoop+'"'
-								+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-								+	' style="text-align:center;font-size:large;font-weight:bold;width:65px"'
-								+'>'
-								+	t.Stop
-								+'</button>';
-					e.insertBefore(nE,e.lastChild);
+		// SetLayout:function(){
+		// 	if(!(this.state.replayer|=0)){
+		// 		let e=$('#watch8-secondary-actions');
+		// 		if(e&&$('#watch8-secondary-actions>.action-panel-trigger-share')){
+		// 			let p=this.parent
+		// 			,	t=p.text
+		// 			,	f=t.TooltipFormat
+		// 			,	nE=document.createElement('div')
+		// 			,	nEc=nE.children;
+		// 			//nE.classList.add('yt-uix-button','yt-uix-button-opacity','yt-uix-button-text');
+		// 			nE.style.border='2px solid grey';
+		// 			nE.style.borderRadius='10px';
+		// 			nE.style.display='inline-block';
+		// 						// From (Time Range): index == 0
+		// 			nE.innerHTML='<input'
+		// 						+	' size=6'
+		// 						+	' placeholder="'+t.PlaceHolderFrom+'"'
+		// 						+	' title="'+t.TooltipFrom+' - '+f+'"'
+		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
+		// 						+	' style="text-align:right;font-size:larger;font-weight:bold"'
+		// 						+'>'
+		// 						// From (Button): index == 1
+		// 						+'<button'
+		// 						+	' title="'+t.TooltipFromButton+'"'
+		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
+		// 						+	' style="text-align:center;font-size:larger;font-weight:bold"'
+		// 						+'>'
+		// 						+	t.ButtonFrom
+		// 						+'</button>'
+		// 						+'<button'
+		// 						+	' class="yt-uix-button"'
+		// 						+	' style="font-size:larger;font-weight:bold"'
+		// 						+'>'
+		// 						+	'-'
+		// 						+'</button>'
+		// 						// To (Button): index == 3
+		// 						+'<button'
+		// 						+	' title="'+t.TooltipToButton+'"'
+		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
+		// 						+	' style="text-align:center;font-size:larger;font-weight:bold"'
+		// 						+'>'
+		// 						+	t.ButtonTo
+		// 						+'</button>'
+		// 						// To (Time Range): index == 4
+		// 						+'<input'
+		// 						+	' size=6'
+		// 						+	' placeholder="'+t.PlaceHolderTo+'"'
+		// 						+	' title="'+t.TooltipTo+' - '+f+'"'
+		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
+		// 						+	' style="text-align:left;font-size:larger;font-weight:bold"'
+		// 						+'>'
+		// 						// Replayer Action (Button): index == 5
+		// 						+'<button'
+		// 						+	' title="'+t.TooltipStopToLoop+'"'
+		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
+		// 						+	' style="text-align:center;font-size:large;font-weight:bold;width:65px"'
+		// 						+'>'
+		// 						+	t.Stop
+		// 						+'</button>';
+		// 			e.insertBefore(nE,e.lastChild);
 
-					let ui=this.parent.ui
-					,	keyEvt=(evt)=>
-							evt.keyCode==13
-							&&p.setRange()
-							&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
+		// 			let ui=this.parent.ui
+		// 			,	keyEvt=(evt)=>
+		// 					evt.keyCode==13
+		// 					&&p.setRange()
+		// 					&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
 
-					(ui.fromRange=nEc[0]).addEventListener('keyup',keyEvt,false);
-					(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
-					(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
-					(ui.toRange=nEc[4]).addEventListener('keyup',keyEvt,false);
-					(ui.actionButton=nEc[5]).addEventListener('click',()=>p.setRange()&&p.toggle(),false);
+		// 			(ui.fromRange=nEc[0]).addEventListener('keyup',keyEvt,false);
+		// 			(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
+		// 			(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
+		// 			(ui.toRange=nEc[4]).addEventListener('keyup',keyEvt,false);
+		// 			(ui.actionButton=nEc[5]).addEventListener('click',()=>p.setRange()&&p.toggle(),false);
 
-					this.state.replayer=true;
-				}
-			}
-		},
-		UpdateInterface:function(){
-			if(!(this.state.updateInterface|=0)&&this.state.replayer&&this.state.durationLoaded){
-				let p=this.parent;
-				setTimeout(()=>(p.ui.ready=true)&&p.updateInterface());
-				this.state.updateInterface=true;
-			}
-		},
-		ChangeYouTubeLayout:function(){
-			// remove like number
-			//let e=$('.like-button-renderer'),eMenu;
-			//if(e&&!(this.state.likeDislike=this.state.likeDislike)){
-			//	let eC=e.children;
-			//	eC[0].children[0].removeChild(eC[0].children[0].children[0]);
-			//	eC[2].children[0].removeChild(eC[2].children[0].children[0]);
-			//	this.state.likeDislike=true;
-			//}
+		// 			this.state.replayer=true;
+		// 		}
+		// 	}
+		// },
+		// UpdateInterface:function(){
+		// 	if(!(this.state.updateInterface|=0)&&this.state.replayer&&this.state.durationLoaded){
+		// 		let p=this.parent;
+		// 		setTimeout(()=>(p.ui.ready=true)&&p.updateInterface());
+		// 		this.state.updateInterface=true;
+		// 	}
+		// },
+		// ChangeYouTubeLayout:function(){
+		// 	// remove like number
+		// 	//let e=$('.like-button-renderer'),eMenu;
+		// 	//if(e&&!(this.state.likeDislike=this.state.likeDislike)){
+		// 	//	let eC=e.children;
+		// 	//	eC[0].children[0].removeChild(eC[0].children[0].children[0]);
+		// 	//	eC[2].children[0].removeChild(eC[2].children[0].children[0]);
+		// 	//	this.state.likeDislike=true;
+		// 	//}
 
-			// move share button to more
-			// execute too much time before interface ready
-			if(this.state.replayer&&!(this.state.menuList|=0)){
-				let e=$('#watch8-secondary-actions'),eMenu=e&&e.querySelector('ul');
-				if(eMenu){
-					let eC=e.children,eLi=document.createElement('li');
-					eC[1].classList.remove('yt-uix-button','yt-uix-button-opacity','yt-uix-button-has-icon','no-icon-markup','yt-uix-tooltip');
-					eC[1].classList.add('has-icon','yt-ui-menu-item','yt-uix-menu-close-on-select');
-					eLi.appendChild(eC[1]);
-					eMenu.insertBefore(eLi,eMenu.children[0]);
-					this.state.menuList=true;
-				}
-			}
-		},
+		// 	// move share button to more
+		// 	// execute too much time before interface ready
+		// 	if(this.state.replayer&&!(this.state.menuList|=0)){
+		// 		let e=$('#watch8-secondary-actions'),eMenu=e&&e.querySelector('ul');
+		// 		if(eMenu){
+		// 			let eC=e.children,eLi=document.createElement('li');
+		// 			eC[1].classList.remove('yt-uix-button','yt-uix-button-opacity','yt-uix-button-has-icon','no-icon-markup','yt-uix-tooltip');
+		// 			eC[1].classList.add('has-icon','yt-ui-menu-item','yt-uix-menu-close-on-select');
+		// 			eLi.appendChild(eC[1]);
+		// 			eMenu.insertBefore(eLi,eMenu.children[0]);
+		// 			this.state.menuList=true;
+		// 		}
+		// 	}
+		// },
 		ChangeQuanlity:function(){
 			if(!(this.state.playerQuality|=0)){
 				let p=this.parent.player;
-				if(p){
-					p.setPlaybackQuality(p.getAvailableQualityLevels()[0]);
-					this.state.playerQuality=p.getPlaybackQuality()==p.getAvailableQualityLevels()[0];
-				}
+				this.state.playerQuality=p.getPlaybackQuality()==p.getAvailableQualityLevels()[0];
+
+				let _qi=()=>$('.ytp-settings-menu .ytp-panel-menu').lastElementChild;
+				let chq=()=>{
+					let qi=_qi();
+					qi&&qi.click();
+					setTimeout(()=>{
+						let hqi=$('.ytp-settings-menu .ytp-quality-menu .ytp-panel-menu .ytp-menuitem');
+						hqi&&hqi.click();
+					}, 200);
+				};
+				setTimeout(()=>{
+					if(!_qi()){
+						let sb=$('.ytp-settings-button');
+						if(sb){
+							sb.click();
+							setTimeout(()=>{
+								sb.click();
+								setTimeout(chq,200);
+							},200);
+						}
+					}else{
+						chq();
+					}
+				}, 200);
 			}
 		},
 		LoadInfoAndRun:function(){
@@ -483,7 +509,7 @@
 						p.videoID=newVideoID;
 						delete this.state;
 					}else{
-						setTimeout(()=>this.main(),100);
+						setTimeout(()=>this.main(),1000);
 					}
 				}
 			}
@@ -503,25 +529,25 @@
 				let p=this.player=$('#movie_player')
 				,	v=this.video=p&&p.querySelector('video');
 
-				if(p&&v){
+				if(p&&v&&p.getPlayerState()==1){
 					// add all event handle
-					let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
-//					v[evt]('play',reloadTimer);
-					v[evt]('playing',reloadTimer);
-//					v[evt]('seeked',reloadTimer);
-//					v[evt]('ratechange',reloadTimer);
+					// let reloadTimer=()=>!this.isVideoChanged()&&this.toggle(this.curMode);
+					// v[evt]('play',reloadTimer);
+					// v[evt]('playing',reloadTimer);
+					// v[evt]('seeked',reloadTimer);
+					// v[evt]('ratechange',reloadTimer);
 
-					let stopTimer=()=>this.rmTimer();
-					v[evt]('pause',stopTimer);
-					//v[evt]('stalled',stopTimer);
-					v[evt]('suspend',stopTimer);
-					v[evt]('waiting',stopTimer);
+					// let stopTimer=()=>this.rmTimer();
+					// v[evt]('pause',stopTimer);
+					// v[evt]('stalled',stopTimer);
+					// v[evt]('suspend',stopTimer);
+					// v[evt]('waiting',stopTimer);
 
 					let init=()=>this.init.main();
 					v[evt]('durationchange',init);
 					init();
 				}else{
-					setTimeout(f);
+					setTimeout(f,1000);
 				}
 			};
 		f();
