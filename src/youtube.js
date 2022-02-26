@@ -274,14 +274,16 @@ window.Replayer=
 				let p=this.parent.player;
 				this.state.playerQuality=p.getPlaybackQuality()==p.getAvailableQualityLevels()[0];
 
-				let _qi=()=>$('.ytp-settings-menu .ytp-panel-menu').lastElementChild;
+				let _qi=()=>$('.ytp-settings-menu .ytp-panel-menu .ytp-menuitem path[d^="M15,17h6v1h"]')?.parentNode.parentNode.parentNode;
 				let chq=()=>{
-					let qi=_qi();
-					qi&&qi.click();
-					setTimeout(()=>{
-						let hqi=$('.ytp-settings-menu .ytp-quality-menu .ytp-panel-menu .ytp-menuitem');
-						hqi&&hqi.click();
-					}, 200);
+					let qi;
+					if(qi=_qi()){
+						qi.click();
+						setTimeout(()=>{
+							let hqi=$('.ytp-settings-menu .ytp-quality-menu .ytp-panel-menu .ytp-menuitem');
+							hqi&&hqi.click();
+						}, 200);
+					}
 				};
 				setTimeout(()=>{
 					if(!_qi()){
