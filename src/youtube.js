@@ -1,30 +1,30 @@
 // for debugging use
 window.Replayer=
 {
-	text:{
-		Loop:'├⭮┤',
-		Crop:'├⏵┤',
-		Stop:'⏵',
-		ButtonFrom:'A',
-		ButtonTo:'B',
-		PlaceHolderFrom:'From',
-		PlaceHolderTo:'To',
-		TooltipFromButton:'Set now as the start',
-		TooltipToButton:'Set now as the end',
-		TooltipLoopToCrop:'Looping; Click to Crop',
-		TooltipCropToStop:'Cropped; Click to Normal',
-		TooltipStopToLoop:'Normal; Click to Loop',
-		TooltipFormat:'[ [ [ [ h: ] m: ] s. ] ms ]',
-		TooltipFrom:'Start',
-		TooltipTo:'End'
-	},
-	ui:{
-//		fromRange: <DOMInputElement>,
-//		toRange: <DOMInputElement>,
-//		aButton: <DOMButtonElement>,
-//		bButton: <DOMButtonElement>,
-//		actionButton: <DOMButtonElement>,
-	},
+	// text:{
+	// 	Loop:'├⭮┤',
+	// 	Crop:'├⏵┤',
+	// 	Stop:'⏵',
+	// 	ButtonFrom:'A',
+	// 	ButtonTo:'B',
+	// 	PlaceHolderFrom:'From',
+	// 	PlaceHolderTo:'To',
+	// 	TooltipFromButton:'Set now as the start',
+	// 	TooltipToButton:'Set now as the end',
+	// 	TooltipLoopToCrop:'Looping; Click to Crop',
+	// 	TooltipCropToStop:'Cropped; Click to Normal',
+	// 	TooltipStopToLoop:'Normal; Click to Loop',
+	// 	TooltipFormat:'[ [ [ [ h: ] m: ] s. ] ms ]',
+	// 	TooltipFrom:'Start',
+	// 	TooltipTo:'End'
+	// },
+// 	ui:{
+// //		fromRange: <DOMInputElement>,
+// //		toRange: <DOMInputElement>,
+// //		aButton: <DOMButtonElement>,
+// //		bButton: <DOMButtonElement>,
+// //		actionButton: <DOMButtonElement>,
+// 	},
 //	player: <DOMDivElement with player control prototype>,
 //	video: <DOMVideoElement>
 //	videoID:'',
@@ -136,30 +136,6 @@ window.Replayer=
 		this.IndexedDB.save();
 		this.toggle(this.curMode);
 	},
-	updateInterface:function(){
-		if(this.ui.ready){
-			if(this.duration.from||this.duration.to){
-				let e=this.ui
-				,	eB=e.actionButton;
-				e.fromRange.value=this.msToStr(this.duration.from*1000);
-				e.toRange.value=this.msToStr(this.duration.to*1000);
-				switch(this.curMode){
-					case this.mode.loop:
-						eB.innerHTML=this.text.Loop;
-						eB.title=eB.dataset.tooltipText=this.text.TooltipLoopToCrop;
-						break;
-					case this.mode.crop:
-						eB.innerHTML=this.text.Crop;
-						eB.title=eB.dataset.tooltipText=this.text.TooltipCropToStop;
-						break;
-					case this.mode.stop:
-						eB.innerHTML=this.text.Stop;
-						eB.title=eB.dataset.tooltipText=this.text.TooltipStopToLoop;
-						break;
-				}
-			}
-		}
-	},
 	rmTimer:function(){
 		clearTimeout(this.timer);
 		this.timer=null;
@@ -172,7 +148,6 @@ window.Replayer=
 			}else{
 				this.setStop();
 			}
-			this.updateInterface();
 //		}
 	},
 //	e:DOMInputElement
@@ -286,146 +261,7 @@ window.Replayer=
 			!this.isReqOpen&&this.openDB();
 		}
 	},
-	unload:{
-		SaveRecordAndRemoveTimer:function(){
-			let p=this.parent;
-			if(p.videoID&&p.duration.to){
-				p.IndexedDB.setInfo(
-					{
-						videoID:p.videoID,
-						from:p.duration.from,
-						to:p.duration.to,
-						curMode:p.curMode
-					}
-				);
-				p.duration={};
-				p.setStop();
-				p.videoID=null;
-			}
-		},
-		RemoveUIRef:function(){
-			this.parent.ui={};
-		},
-//		changing:false,
-		main:function(){
-			if(!this.changing){
-				this.changing=true;
-				for(let x in this){
-					this[x].constructor==Function&&this[x]();
-				}
-				this.changing=false;
-			}
-		}
-	},
 	init:{
-		// SetLayout:function(){
-		// 	if(!(this.state.replayer|=0)){
-		// 		let e=$('#watch8-secondary-actions');
-		// 		if(e&&$('#watch8-secondary-actions>.action-panel-trigger-share')){
-		// 			let p=this.parent
-		// 			,	t=p.text
-		// 			,	f=t.TooltipFormat
-		// 			,	nE=document.createElement('div')
-		// 			,	nEc=nE.children;
-		// 			//nE.classList.add('yt-uix-button','yt-uix-button-opacity','yt-uix-button-text');
-		// 			nE.style.border='2px solid grey';
-		// 			nE.style.borderRadius='10px';
-		// 			nE.style.display='inline-block';
-		// 						// From (Time Range): index == 0
-		// 			nE.innerHTML='<input'
-		// 						+	' size=6'
-		// 						+	' placeholder="'+t.PlaceHolderFrom+'"'
-		// 						+	' title="'+t.TooltipFrom+' - '+f+'"'
-		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-		// 						+	' style="text-align:right;font-size:larger;font-weight:bold"'
-		// 						+'>'
-		// 						// From (Button): index == 1
-		// 						+'<button'
-		// 						+	' title="'+t.TooltipFromButton+'"'
-		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-		// 						+	' style="text-align:center;font-size:larger;font-weight:bold"'
-		// 						+'>'
-		// 						+	t.ButtonFrom
-		// 						+'</button>'
-		// 						+'<button'
-		// 						+	' class="yt-uix-button"'
-		// 						+	' style="font-size:larger;font-weight:bold"'
-		// 						+'>'
-		// 						+	'-'
-		// 						+'</button>'
-		// 						// To (Button): index == 3
-		// 						+'<button'
-		// 						+	' title="'+t.TooltipToButton+'"'
-		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-		// 						+	' style="text-align:center;font-size:larger;font-weight:bold"'
-		// 						+'>'
-		// 						+	t.ButtonTo
-		// 						+'</button>'
-		// 						// To (Time Range): index == 4
-		// 						+'<input'
-		// 						+	' size=6'
-		// 						+	' placeholder="'+t.PlaceHolderTo+'"'
-		// 						+	' title="'+t.TooltipTo+' - '+f+'"'
-		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-		// 						+	' style="text-align:left;font-size:larger;font-weight:bold"'
-		// 						+'>'
-		// 						// Replayer Action (Button): index == 5
-		// 						+'<button'
-		// 						+	' title="'+t.TooltipStopToLoop+'"'
-		// 						+	' class="yt-uix-tooltip yt-uix-button yt-uix-button-opacity"'
-		// 						+	' style="text-align:center;font-size:large;font-weight:bold;width:65px"'
-		// 						+'>'
-		// 						+	t.Stop
-		// 						+'</button>';
-		// 			e.insertBefore(nE,e.lastChild);
-
-		// 			let ui=this.parent.ui
-		// 			,	keyEvt=(evt)=>
-		// 					evt.keyCode==13
-		// 					&&p.setRange()
-		// 					&&p.toggle(p.curMode!=p.mode.stop?p.curMode:p.mode.crop);
-
-		// 			(ui.fromRange=nEc[0]).addEventListener('keyup',keyEvt,false);
-		// 			(ui.aButton=nEc[1]).addEventListener('click',()=>p.setA(),false);
-		// 			(ui.bButton=nEc[3]).addEventListener('click',()=>p.setB(),false);
-		// 			(ui.toRange=nEc[4]).addEventListener('keyup',keyEvt,false);
-		// 			(ui.actionButton=nEc[5]).addEventListener('click',()=>p.setRange()&&p.toggle(),false);
-
-		// 			this.state.replayer=true;
-		// 		}
-		// 	}
-		// },
-		// UpdateInterface:function(){
-		// 	if(!(this.state.updateInterface|=0)&&this.state.replayer&&this.state.durationLoaded){
-		// 		let p=this.parent;
-		// 		setTimeout(()=>(p.ui.ready=true)&&p.updateInterface());
-		// 		this.state.updateInterface=true;
-		// 	}
-		// },
-		// ChangeYouTubeLayout:function(){
-		// 	// remove like number
-		// 	//let e=$('.like-button-renderer'),eMenu;
-		// 	//if(e&&!(this.state.likeDislike=this.state.likeDislike)){
-		// 	//	let eC=e.children;
-		// 	//	eC[0].children[0].removeChild(eC[0].children[0].children[0]);
-		// 	//	eC[2].children[0].removeChild(eC[2].children[0].children[0]);
-		// 	//	this.state.likeDislike=true;
-		// 	//}
-
-		// 	// move share button to more
-		// 	// execute too much time before interface ready
-		// 	if(this.state.replayer&&!(this.state.menuList|=0)){
-		// 		let e=$('#watch8-secondary-actions'),eMenu=e&&e.querySelector('ul');
-		// 		if(eMenu){
-		// 			let eC=e.children,eLi=document.createElement('li');
-		// 			eC[1].classList.remove('yt-uix-button','yt-uix-button-opacity','yt-uix-button-has-icon','no-icon-markup','yt-uix-tooltip');
-		// 			eC[1].classList.add('has-icon','yt-ui-menu-item','yt-uix-menu-close-on-select');
-		// 			eLi.appendChild(eC[1]);
-		// 			eMenu.insertBefore(eLi,eMenu.children[0]);
-		// 			this.state.menuList=true;
-		// 		}
-		// 	}
-		// },
 		ChangeQuanlity:function(){
 			if(!(this.state.playerQuality|=0)){
 				let p=this.parent.player;
@@ -521,7 +357,6 @@ window.Replayer=
 	start:function(){
 		// set parent
 		this.IndexedDB.parent=
-		this.unload.parent=
 		this.init.parent=this;
 
 		let evt='addEventListener'
@@ -551,6 +386,5 @@ window.Replayer=
 				}
 			};
 		f();
-		window[evt]('beforeunload',()=>this.unload.main());
 	}
 }
