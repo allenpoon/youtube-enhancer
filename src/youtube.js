@@ -50,14 +50,18 @@ window.Replayer=
 //		to:null
 	},
 	setStop:function(){
-		this.curMode=this.mode.stop;
-		this.IndexedDB.save();
+		if(this.curMode!=this.mode.stop){
+			this.curMode=this.mode.stop;
+			this.IndexedDB.save();
+		}
 		this.video.loop=false;
 		this.rmTimer();
 	},
 	setLoop:function(){
-		this.curMode=this.mode.loop;
-		this.IndexedDB.save();
+		if(this.curMode!=this.mode.loop){
+			this.curMode=this.mode.loop;
+			this.IndexedDB.save();
+		}
 
 		let p=this.player;
 		if(	this.duration.to<=p.getCurrentTime()
@@ -72,7 +76,10 @@ window.Replayer=
 		}
 	},
 	setCrop:function(){
-		this.curMode=this.mode.crop;
+		if(this.curMode!=this.mode.crop){
+			this.curMode=this.mode.crop;
+			this.IndexedDB.save();
+		}
 		this.IndexedDB.save();
 
 		let p=this.player;
