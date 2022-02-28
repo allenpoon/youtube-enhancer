@@ -9,7 +9,7 @@ MAIN_PROG=$(sed -e "s/else {/else{/g" <<< "$MAIN_PROG" | sed -e "s/;}/}/g" | sed
 cat > youtube.js <<END_OF_FILE
 {
 	let script = document.createElement('script');
-	script.innerHTML = "'use strict';if(!('\$' in window)){window.$=(a)=>document.querySelector(a)};(${MAIN_PROG}).start();";
+	script.innerHTML = "'use strict';(${MAIN_PROG})();";
 	document.head.appendChild(script);
 }
 END_OF_FILE
