@@ -118,14 +118,14 @@ _=>{
 				clearTimeout(this.timer);
 				this.timer=null;
 			},
-			toggle:function(mode=(this.curMode+1)%3){
-					if(mode==this.mode.loop){
-						this.setLoop();
-					}else if(mode==this.mode.crop){
-						this.setCrop();
-					}else{
-						this.setStop();
-					}
+			toggle:function(mode=this.curMode%3+1){
+				if(mode==this.mode.loop){
+					this.setLoop();
+				}else if(mode==this.mode.crop){
+					this.setCrop();
+				}else{
+					this.setStop();
+				}
 			},
 			getSecond:function(s=''){
 				let t=String(s).match(this.format)
